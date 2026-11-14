@@ -1,0 +1,26 @@
+
+===== smoke 2026-11-14T12:58:02 rc=0 =====
+===== mafc-nav 每日同步 SYNC-20261114-125759 =====
+[Stage0 前置校验             ] PASS  prod 引擎 / 清洗主表 / 研究参数版本库齐全  (0.0s)
+[Stage1 真实行情探针           ] PASS  4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）  (1.13s)
+[Stage2 模型状态             ] PASS  上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点  (0.03s)
+[Stage3 影子进化学习           ] PASS  EVOLVED 版本 s001 降级=True 有效=fixed  (1.15s)
+[Stage4 日台账              ] PASS  nav_daily.csv 1 行，同日覆盖幂等，净值 carry_forward  (0.0s)
+[Stage5 看板重生成            ] PASS  dashboard/index.html 211.2KB / 3 图  (0.63s)
+[Stage6 健康检查             ] PASS  6/6 通过  (0.0s)
+
+====================================================================
+一行汇总：SYNC-20261114-125759 scraped=4/4 new=0 md=4 per_account=[spx:2026-11-13/ixic:2026-11-13/gold:2026-11-13/cnbond:2026-11-13]；上线口径 12.02%/0.867；影子 s001 EVOLVED 降级=True 实盘观察 0月；看板 211.2KB；健康检查 6/6 → OK
+
+===== idempotency-check 2026-11-14T12:58:04 rc=0 =====
+===== mafc-nav 每日同步 SYNC-20261114-125802 =====
+[Stage0 前置校验             ] PASS  prod 引擎 / 清洗主表 / 研究参数版本库齐全  (0.0s)
+[Stage1 真实行情探针           ] PASS  4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）  (0.91s)
+[Stage2 模型状态             ] PASS  上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点  (0.04s)
+[Stage3 影子进化学习           ] PASS  EVOLVED 版本 s001 降级=True 有效=fixed  (0.0s)
+[Stage4 日台账              ] PASS  nav_daily.csv 1 行，同日覆盖幂等，净值 carry_forward  (0.0s)
+[Stage5 看板重生成            ] PASS  dashboard/index.html 211.7KB / 3 图  (0.63s)
+[Stage6 健康检查             ] PASS  6/6 通过  (0.0s)
+
+====================================================================
+一行汇总：SYNC-20261114-125802 scraped=4/4 new=0 md=4 per_account=[spx:2026-11-13/ixic:2026-11-13/gold:2026-11-13/cnbond:2026-11-13]；上线口径 12.02%/0.867；影子 s001 EVOLVED 降级=True 实盘观察 0月；看板 211.7KB；健康检查 6/6 → OK

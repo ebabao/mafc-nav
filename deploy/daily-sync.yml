@@ -1,0 +1,37 @@
+# mafc-nav 每日同步 · 本地参考模板（云端正式版见 .github/workflows/mafc-daily-sync.yml）
+# UTC 01:30 = 北京时间 09:30；亦可用 workflow_dispatch 手动触发
+# 与 ebabao/all-weather-nav 完全独立：独立仓库、独立并发组、独立 Pages 站点、错峰 cron
+name: mafc-nav daily sync (local reference)
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: mafc-nav-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装中文字体与依赖
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+          pip install -r requirements.txt
+      - name: 校验随仓库打包的 vendor 依赖
+        run: |
+          test -f vendor/prod/src/engine.py
+          test -f vendor/prod/data/clean/prices_monthly.csv
+          test -f vendor/data/premium_monthly.csv
+          test -f vendor/prod/output/param_registry.json
+      - name: 每日同步（现场回测 + 影子进化 + 看板重生成）
+        run: python src/sync_daily.py
+      - name: 提交数据变更（幂等：无变化则跳过）
+        run: |
+          git config user.name "mafc-nav-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/ dashboard/index.html output/ 2>/dev/null || true
+          if git diff --cached --quiet; then echo "无数据变化，跳过提交"; else git commit -m "chore(nav): mafc-nav 每日同步" && git push; fi

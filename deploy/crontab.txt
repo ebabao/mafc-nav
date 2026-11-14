@@ -1,0 +1,5 @@
+# mafc-nav 每日同步（本地 09:30）
+# 注册：crontab -l > /tmp/ct; cat deploy/crontab.txt >> /tmp/ct; crontab /tmp/ct
+# 或 crontab -e 手动追加下面一行
+
+30 9 * * * cd /workspace/mafc-nav && /root/.pyenv/versions/3.11.1/bin/python3.11 /workspace/mafc-nav/src/sync_daily.py >> /workspace/mafc-nav/logs/sync.log 2>&1

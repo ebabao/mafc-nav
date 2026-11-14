@@ -1,0 +1,128 @@
+name: mafc-nav 每日同步与独立 Pages 部署
+
+# 与 ebabao/all-weather-nav（全天候策略 v1.4）完全隔离：
+#   · 独立仓库 / 独立并发组 / 独立 Pages 站点 / 独立 environment
+#   · 错峰 cron：本工程 UTC 01:30（北京 09:30），all-weather-nav 为 UTC 11:20 / 13:00
+#   · 站点产物仅含 index.html + data/ 接口，不与其他仓库共用发布源
+# 策略：MAFC 固定规则组合（RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债）
+
+on:
+  schedule:
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+    inputs:
+      no_refresh:
+        description: '仅用仓库内 vendor 快照回放，不联网探测'
+        type: boolean
+        required: false
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/mafc-daily-sync.yml'
+      - 'src/**'
+      - 'config/**'
+      - 'vendor/**'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mafc-nav-sync
+  cancel-in-progress: false
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: 安装中文字体（看板图表渲染）
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-noto-cjk
+
+      - name: 安装核心依赖
+        run: pip install -r requirements.txt
+
+      - name: 安装可选行情探针依赖（失败不阻断，探针将如实标 unavailable）
+        continue-on-error: true
+        run: pip install akshare
+
+      - name: 校验随仓库打包的 prod 最小运行依赖
+        run: |
+          test -f vendor/prod/src/engine.py
+          test -f vendor/prod/src/execution.py
+          test -f vendor/prod/src/calibrate.py
+          test -f vendor/prod/data/clean/prices_monthly.csv
+          test -f vendor/data/premium_monthly.csv
+          test -f vendor/prod/output/param_registry.json
+          echo "vendor 依赖齐全（云端 runner 无需外部 prod 工程）"
+
+      - name: 每日同步（现场回测 + 影子进化 + 看板与接口重生成）
+        run: python src/sync_daily.py
+
+      - name: 接口契约校验
+        run: |
+          python - <<'PY'
+          import json, os, csv
+          assert os.path.getsize('dashboard/index.html') > 5000, '看板缺失'
+          m = json.load(open('data/model_state.json'))
+          s = json.load(open('data/shadow_state.json'))
+          assert m['period']['n_months'] > 0, '回测区间异常'
+          assert m['metrics']['live']['cagr'] == m['metrics']['live']['cagr'], '非有限数值'
+          assert m['as_of_date'] == s['as_of'], '模型与影子 as_of 不同步'
+          with open('data/nav_daily.csv') as f:
+              rows = list(csv.DictReader(f))
+          assert rows and len({r['date'] for r in rows}) == len(rows), '台账日期不唯一'
+          print(f"接口校验 PASS | as_of={m['as_of_date']} 月数={m['period']['n_months']} 台账={len(rows)}行")
+          PY
+
+      - name: 提交数据与看板变更（幂等：无变化则跳过）
+        run: |
+          git config user.name "mafc-nav-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ dashboard/index.html output/ 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "本次无数据变化，跳过提交"
+          else
+            git commit -m "chore(nav): mafc-nav 每日同步"
+            git push
+          fi
+
+  deploy:
+    needs: sync
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 组装独立站点（仅页面与数据接口，不暴露脚本与模型文件）
+        run: |
+          mkdir -p site/data
+          cp dashboard/index.html site/index.html
+          cp .nojekyll site/
+          cp data/*.json data/*.csv site/data/ 2>/dev/null || true
+          ls -la site/ site/data/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

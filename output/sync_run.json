@@ -1,0 +1,169 @@
+{
+  "run_id": "SYNC-20261114-125802",
+  "as_of": "2026-11-14",
+  "generated_at": "2026-11-14T12:58:04",
+  "scraped": 4,
+  "new": 0,
+  "md": 4,
+  "per_account": {
+    "spx": {
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true
+        }
+      ],
+      "note": "仅作数据新鲜度探针，不写入模型价格数据"
+    },
+    "ixic": {
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true
+        }
+      ],
+      "note": "仅作数据新鲜度探针，不写入模型价格数据"
+    },
+    "gold": {
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true
+        }
+      ],
+      "note": "仅作数据新鲜度探针，不写入模型价格数据"
+    },
+    "cnbond": {
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true
+        }
+      ],
+      "note": "仅作数据新鲜度探针，不写入模型价格数据"
+    }
+  },
+  "metrics_note": "scraped=探针成功标的数；new=新增月度净值点（0=月末未确认，非漏同步）；md=本次维护的数据/看板文件数；per_account=各标的最新交易日与补数状态",
+  "stages": [
+    {
+      "stage": "Stage0 前置校验",
+      "status": "PASS",
+      "detail": "prod 引擎 / 清洗主表 / 研究参数版本库齐全",
+      "elapsed_sec": 0.0
+    },
+    {
+      "stage": "Stage1 真实行情探针",
+      "status": "PASS",
+      "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
+      "elapsed_sec": 0.91
+    },
+    {
+      "stage": "Stage2 模型状态",
+      "status": "PASS",
+      "detail": "上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点",
+      "elapsed_sec": 0.04
+    },
+    {
+      "stage": "Stage3 影子进化学习",
+      "status": "PASS",
+      "detail": "EVOLVED 版本 s001 降级=True 有效=fixed",
+      "elapsed_sec": 0.0
+    },
+    {
+      "stage": "Stage4 日台账",
+      "status": "PASS",
+      "detail": "nav_daily.csv 1 行，同日覆盖幂等，净值 carry_forward",
+      "elapsed_sec": 0.0
+    },
+    {
+      "stage": "Stage5 看板重生成",
+      "status": "PASS",
+      "detail": "dashboard/index.html 211.7KB / 3 图",
+      "elapsed_sec": 0.63
+    },
+    {
+      "stage": "Stage6 健康检查",
+      "status": "PASS",
+      "detail": "6/6 通过",
+      "elapsed_sec": 0.0
+    }
+  ],
+  "health": {
+    "必需文件齐全": true,
+    "看板结尾完整": true,
+    "无占位残留": true,
+    "口径数字一致": true,
+    "引擎成本已恢复": true,
+    "台账当日唯一": true
+  },
+  "model": {
+    "period": {
+      "start": "2007-11",
+      "end": "2026-11",
+      "n_months": 228
+    },
+    "live": {
+      "final_equity": 8643386.349273,
+      "cagr": 0.120209,
+      "vol": 0.116322,
+      "sharpe": 0.867312,
+      "mdd": -0.17783,
+      "calmar": 0.675979,
+      "monthly_win": 0.688596,
+      "n_months": 228.0,
+      "avg_exposure": 1.033013,
+      "avg_turnover": 0.431516
+    },
+    "research": {
+      "final_equity": 11408713.38205,
+      "cagr": 0.136695,
+      "vol": 0.138996,
+      "sharpe": 0.852529,
+      "mdd": -0.181793,
+      "calmar": 0.751927,
+      "monthly_win": 0.684211,
+      "n_months": 228.0,
+      "avg_exposure": 1.092576,
+      "avg_turnover": 0.281098
+    },
+    "latest_signal": {
+      "decision_month": "2026-10",
+      "regime": 0,
+      "rs_pick": "spx",
+      "weights": "cnbond:1.000",
+      "exposure": 1.0,
+      "premium_pct": 3.5719,
+      "premium_blocked": true,
+      "bear_bond_active": 1,
+      "bond_cash": 0
+    }
+  },
+  "shadow": {
+    "status": "EVOLVED",
+    "version": "s001",
+    "degraded": true,
+    "effective_params": "fixed",
+    "live_observation_months": 0,
+    "single_fold_win": true
+  },
+  "dashboard": {
+    "file": "dashboard/index.html",
+    "size_kb": 211.7,
+    "figures": 3,
+    "tables": 8
+  },
+  "verdict": "OK",
+  "elapsed_sec": 1.6
+}

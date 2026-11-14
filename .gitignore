@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.tmp
+output/backup_index.html
+site/
+.DS_Store

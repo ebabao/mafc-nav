@@ -1,0 +1,28 @@
+{
+  "source": "exam_results.json · 关7 成本四层 + 关2 实盘执行漏水点",
+  "profiles_bps_one_way": {
+    "research": 5,
+    "live": 15,
+    "stress": 30
+  },
+  "default_for_live": "live",
+  "research_is_immutable": true,
+  "four_layers": {
+    "佣金": "已计入（research 5bp / live 15bp 单边）",
+    "印花税": "ETF 场内免征；个股/QDII 申赎需另计 —— 定性披露，不编造税率",
+    "滑点": "已含在 live 15bp（文章「来回千三」口径）",
+    "冲击成本": "由 capacity.py 的 1% ADV 约束控制；QDII 溢价一次性择时误差由 premium_guard 控制"
+  },
+  "premium_guard": {
+    "enabled": true,
+    "threshold": 0.02,
+    "series": "../data/premium_monthly.csv",
+    "series_type": "ETF/指数比值相对滚动中位数的估算代理，非官方 IOPV",
+    "coverage_from": "2014-03",
+    "missing_filled_zero": true,
+    "scope": "仅拦截 QDII 股票腿；黄金腿因只在股票多头时配置而一并停配，由负相关利率债/现金承接"
+  },
+  "turnover_note": "溢价过滤使月均换手 0.281→0.447（+59%），额外换手成本已计入 15bp 口径",
+  "live_15bp_cagr_from_exam": 0.132902,
+  "action_ref": "体检 actions[1] P0 成本口径升级"
+}

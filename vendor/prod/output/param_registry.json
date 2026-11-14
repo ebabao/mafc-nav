@@ -1,0 +1,259 @@
+{
+  "fixed_baseline": {
+    "ma_fast": 5,
+    "ma_slow": 12,
+    "mom_lb": 12,
+    "rs_lb": 12,
+    "w_eq": 1.0,
+    "w_gold": 0.4,
+    "w_cnbond": 0.0,
+    "g_thr": 0.0,
+    "b_thr": 0.0,
+    "use_g_ma": true,
+    "use_b_ma": false,
+    "bear_bond": 1.0,
+    "bond_as_cash": true,
+    "gold_only_in_bull": true,
+    "max_lev": 1.2,
+    "vol_target": null,
+    "dd_thr": null,
+    "brake": 0.6,
+    "budget_split": false
+  },
+  "smooth": 0.65,
+  "bounds": [
+    {
+      "name": "w_gold",
+      "lo": 0.0,
+      "hi": 0.55
+    },
+    {
+      "name": "bear_bond",
+      "lo": 0.4,
+      "hi": 1.2
+    },
+    {
+      "name": "b_thr",
+      "lo": 0.0,
+      "hi": 0.06
+    },
+    {
+      "name": "w_cnbond",
+      "lo": 0.0,
+      "hi": 0.25
+    }
+  ],
+  "versions": [
+    {
+      "version": "v01",
+      "train": "2007-11~2015-10",
+      "test": "2015-11~2017-10",
+      "seed": 1000,
+      "fitness": 13.578,
+      "gene_smoothed": [
+        1.0,
+        0.9944,
+        0.3052,
+        0.0
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.55,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.018311942153718147,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.1955061617477818,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": false
+    },
+    {
+      "version": "v02",
+      "train": "2009-11~2017-10",
+      "test": "2017-11~2019-10",
+      "seed": 1001,
+      "fitness": 18.234,
+      "gene_smoothed": [
+        0.8714,
+        0.7337,
+        0.2343,
+        0.278
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.4,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.0,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.0,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": true
+    },
+    {
+      "version": "v03",
+      "train": "2011-11~2019-10",
+      "test": "2019-11~2021-10",
+      "seed": 1002,
+      "fitness": 18.763,
+      "gene_smoothed": [
+        0.5666,
+        0.8269,
+        0.2081,
+        0.4593
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.4,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.0,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.0,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": true
+    },
+    {
+      "version": "v04",
+      "train": "2013-11~2021-10",
+      "test": "2021-11~2023-10",
+      "seed": 1003,
+      "fitness": 22.126,
+      "gene_smoothed": [
+        0.3683,
+        0.6162,
+        0.3564,
+        0.6264
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.4,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.0,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.0,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": true
+    },
+    {
+      "version": "v05",
+      "train": "2015-11~2023-10",
+      "test": "2023-11~2025-10",
+      "seed": 1004,
+      "fitness": 18.952,
+      "gene_smoothed": [
+        0.284,
+        0.595,
+        0.2883,
+        0.588
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.4,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.0,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.0,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": true
+    },
+    {
+      "version": "v06",
+      "train": "2017-11~2025-10",
+      "test": "2025-11~2026-10",
+      "seed": 1005,
+      "fitness": 24.05,
+      "gene_smoothed": [
+        0.3128,
+        0.6075,
+        0.2548,
+        0.3822
+      ],
+      "params": {
+        "ma_fast": 5,
+        "ma_slow": 12,
+        "mom_lb": 12,
+        "rs_lb": 12,
+        "w_eq": 1.0,
+        "w_gold": 0.4,
+        "w_cnbond": 0.0,
+        "g_thr": 0.0,
+        "b_thr": 0.0,
+        "use_g_ma": true,
+        "use_b_ma": false,
+        "bear_bond": 1.0,
+        "bond_as_cash": true,
+        "gold_only_in_bull": true,
+        "max_lev": 1.2,
+        "vol_target": null,
+        "dd_thr": null,
+        "brake": 0.6,
+        "budget_split": false
+      },
+      "degraded": true
+    }
+  ],
+  "degraded": true
+}

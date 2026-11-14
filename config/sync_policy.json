@@ -1,0 +1,14 @@
+{
+  "prod_dir": "vendor/prod",
+  "sync_time_local": "09:30",
+  "timezone": "Asia/Shanghai",
+  "probe_channels": [
+    "sina",
+    "em"
+  ],
+  "max_retries": 2,
+  "monthly_update_rule": "仅在月末数据确认后追加月度净值点；日间沿用上月净值并标 carry_forward",
+  "idempotency": "nav_daily.csv 按 date 覆盖写入，同日重复运行不新增行",
+  "on_missing_file": "跳过并标注，不编造",
+  "note": "路径相对 mafc-nav 根目录，可移植到其它工作区"
+}

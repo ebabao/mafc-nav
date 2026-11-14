@@ -1,0 +1,58 @@
+{
+  "source": "exam_results.json · 关3/关10/关2/关8 + remediation 真实结果",
+  "mandatory": [
+    {
+      "id": "D1",
+      "item": "多重检验 / DSR",
+      "values": {
+        "DSR": 0.3461,
+        "N_lower": 24104,
+        "expected_max_sr_annual": 0.9443,
+        "observed_sharpe": 0.8525,
+        "harvey_liu_t": 3.6749,
+        "strong_evidence_threshold": 0.95
+      },
+      "rule": "对外不得只展示最优夏普；必须同时披露 DSR 与试验次数下界",
+      "verdict": "严格 DSR 口径仍为 NO-GO（DSR 0.346 < 0.95）"
+    },
+    {
+      "id": "D2",
+      "item": "收益归因",
+      "values": {
+        "beta_share": 0.6543,
+        "timing_increment_sharpe": 0.2947,
+        "permutation_p": 0.029
+      },
+      "rule": "不得把 13.67% 年化全部归功于策略；约 65% 为资产 beta"
+    },
+    {
+      "id": "D3",
+      "item": "数据口径差异",
+      "issues": [
+        "幸存者偏差：部分通过",
+        "未来函数：PASS",
+        "本土化 / 实盘可执行性：WARN",
+        "数据质量门槛：PASS"
+      ],
+      "rule": "价格指数不含股息、实盘 ETF 净值含股息；涨跌停/停牌不可按收盘价成交；T+2 交收"
+    },
+    {
+      "id": "D4",
+      "item": "口径切换后的实盘预期",
+      "rule": "对外披露一律使用 live 15bp + 溢价过滤 + 熔断口径，不得引用 research 5bp 的 13.67%",
+      "research_cagr": 0.136695
+    },
+    {
+      "id": "D5",
+      "item": "容量",
+      "rule": "以真实 ADV 为准；体检中 illustrative_adv_assumption 仅为量纲假设，禁止引用为结论"
+    }
+  ],
+  "forbidden_claims": [
+    "「策略年化 13.67%」作为实盘预期（该数字为 research 5bp 口径）",
+    "「十关全通过可无条件上线」（实为 6绿4黄、双口径 CONDITIONAL-GO）",
+    "「黄金/国债 ETF 是容量瓶颈」（真实 ADV 显示瓶颈为 QDII 标普500ETF）",
+    "省略 DSR / 试验次数 / beta 归因的任何对外业绩展示"
+  ],
+  "external_verdict": "CONDITIONAL-GO（文章口径）/ NO-GO（严格 DSR 口径）"
+}

@@ -1,0 +1,18 @@
+{
+  "run_id": "DEPLOY-20261114-125758",
+  "checks": {
+    "看板结尾完整": true,
+    "内嵌图表 3 张": true,
+    "部署状态已上板": true,
+    "隔离声明已上板": true,
+    "无占位残留": true,
+    "台账幂等": true,
+    "配置齐全": true,
+    "云端工作流齐全": true,
+    "vendor 依赖齐全": true,
+    "同步日志存在": true
+  },
+  "passed": 10,
+  "total": 10,
+  "verdict": "OK"
+}

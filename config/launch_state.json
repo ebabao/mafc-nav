@@ -1,0 +1,21 @@
+{
+  "repo_target": "ebabao/mafc-nav",
+  "pages_url": "https://ebabao.github.io/mafc-nav/",
+  "status": "BLOCKED_PERMISSION",
+  "attempted_at": "2026-11-14T12:53:00+08:00",
+  "create_repo_attempts": 2,
+  "error": "403 Resource not accessible by integration",
+  "reason": "当前 GitHub 连接器为 App 集成令牌，无权在个人命名空间创建仓库（POST /user/repos 需要用户级 OAuth 令牌）；实测读取已授权仓库正常、读取 mafc-nav 返回 404（仓库确实不存在）。按 SOP 建仓重试上限 2 次后停止，不再重试；推送接口因无目标仓库而未实测，不作可用性断言。",
+  "workflow_files_ready": true,
+  "vendor_ready": true,
+  "local_deploy_verdict": "DEPLOYED",
+  "local_health": "10/10 OK",
+  "pages_live": false,
+  "cloud_scheduler_live": false,
+  "honesty": "工作流文件、vendor 依赖与看板均已生成并通过本地验收，但仓库尚未创建、Pages 未启用、云端定时任务未注册 —— 不得宣称已上线。",
+  "unblock_options": [
+    "在 GitHub 网页手动新建空公开仓库 ebabao/mafc-nav（不初始化任何文件），随后由连接器 push_files 一次性推送全部文件，云端工作流即随 push 自动触发首次同步与 Pages 部署",
+    "在目标机器登录 gh CLI（gh auth login）后运行 deploy_to_github.sh / deploy_to_github.ps1",
+    "为 GitHub 连接器授予仓库创建权限后重新执行自动建仓"
+  ]
+}

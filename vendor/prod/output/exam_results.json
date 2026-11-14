@@ -1,0 +1,34 @@
+{
+  "_vendored_note": "运行最小子集：仅保留 execution.live_params 需要的 params 与 model_api 需要的 run_id/summary；完整十关体检结果仍存于源工程 prod/output/exam_results.json，未改动、未编造",
+  "source_file": "prod/output/exam_results.json",
+  "run_id": "EXAM-20261114-093530",
+  "params": {
+    "ma_fast": 5,
+    "ma_slow": 12,
+    "mom_lb": 12,
+    "rs_lb": 12,
+    "w_eq": 1.0,
+    "w_gold": 0.4,
+    "w_cnbond": 0.0,
+    "g_thr": 0.0,
+    "b_thr": 0.0,
+    "use_g_ma": true,
+    "use_b_ma": false,
+    "bear_bond": 1.0,
+    "bond_as_cash": true,
+    "gold_only_in_bull": true,
+    "max_lev": 1.2,
+    "vol_target": null,
+    "dd_thr": null,
+    "brake": 0.6,
+    "budget_split": false
+  },
+  "summary": {
+    "verdict": "CONDITIONAL-GO（有条件上线）",
+    "counts": {
+      "PASS": 6,
+      "WARN": 4,
+      "FAIL": 0
+    }
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "schema": "mafc-nav/push_manifest@1",
+  "target_repo": "ebabao/mafc-nav",
+  "purpose": "仓库创建后一次性推送的完整文件清单（含校验指纹，便于核对不漏不多）",
+  "note": "data/ output/ logs/ dashboard/index.html 为本地验收产物；推送后云端工作流会重新生成，保持幂等",
+  "n_files": 39,
+  "total_kb": 457.3,
+  "files": [
+    {
+      "path": ".gitignore",
+      "bytes": 66,
+      "sha256": "436ed0ff223159b7",
+      "runtime_generated": false
+    },
+    {
+      "path": ".nojekyll",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c14",
+      "runtime_generated": false
+    },
+    {
+      "path": "README.md",
+      "bytes": 7454,
+      "sha256": "294832125cfd1558",
+      "runtime_generated": false
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 40,
+      "sha256": "b63aea5d6238472c",
+      "runtime_generated": false
+    },
+    {
+      "path": "src/dashboard.py",
+      "bytes": 20705,
+      "sha256": "cf9bfbbfd4d83f86",
+      "runtime_generated": false
+    },
+    {
+      "path": "src/deploy.py",
+      "bytes": 18116,
+      "sha256": "83c896bf28f01035",
+      "runtime_generated": false
+    },
+    {
+      "path": "src/model_api.py",
+      "bytes": 5928,
+      "sha256": "643abc8cbe93f595",
+      "runtime_generated": false
+    },
+    {
+      "path": "src/shadow_evolution.py",
+      "bytes": 10084,
+      "sha256": "a97c4bcb012d08fc",
+      "runtime_generated": false
+    },
+    {
+      "path": "src/sync_daily.py",
+      "bytes": 12815,
+      "sha256": "55549d3335a7b2d9",
+      "runtime_generated": false
+    },
+    {
+      "path": "data/model_state.json",
+      "bytes": 22841,
+      "sha256": "19b421fd145ffdef",
+      "runtime_generated": true
+    },
+    {
+      "path": "data/nav_daily.csv",
+      "bytes": 298,
+      "sha256": "ed3459d1a09e3f96",
+      "runtime_generated": true
+    },
+    {
+      "path": "data/shadow_state.json",
+      "bytes": 4181,
+      "sha256": "dcffb936e7b8e3aa",
+      "runtime_generated": true
+    },
+    {
+      "path": "data/shadow_versions.csv",
+      "bytes": 490,
+      "sha256": "abb7c10a114760bb",
+      "runtime_generated": true
+    },
+    {
+      "path": "config/launch_state.json",
+      "bytes": 1449,
+      "sha256": "543c9c6dc9f0841a",
+      "runtime_generated": false
+    },
+    {
+      "path": "config/shadow_policy.json",
+      "bytes": 727,
+      "sha256": "1bdf0a68b8697976",
+      "runtime_generated": false
+    },
+    {
+      "path": "config/sync_policy.json",
+      "bytes": 500,
+      "sha256": "d8658a4e5889cb9f",
+      "runtime_generated": false
+    },
+    {
+      "path": "deploy/crontab.txt",
+      "bytes": 330,
+      "sha256": "3b84995020ec9e29",
+      "runtime_generated": false
+    },
+    {
+      "path": "deploy/daily-sync.yml",
+      "bytes": 1622,
+      "sha256": "66bee05056e89275",
+      "runtime_generated": false
+    },
+    {
+      "path": "deploy/deploy_to_github.ps1",
+      "bytes": 3367,
+      "sha256": "8790e5c7b676ecb5",
+      "runtime_generated": false
+    },
+    {
+      "path": "deploy/deploy_to_github.sh",
+      "bytes": 3595,
+      "sha256": "f1aa69917a8c8081",
+      "runtime_generated": false
+    },
+    {
+      "path": "deploy/windows_task.ps1",
+      "bytes": 822,
+      "sha256": "2ed70e05fa151bed",
+      "runtime_generated": false
+    },
+    {
+      "path": "output/deploy_report.json",
+      "bytes": 5180,
+      "sha256": "98a62dbc79cee6e2",
+      "runtime_generated": true
+    },
+    {
+      "path": "output/health.json",
+      "bytes": 423,
+      "sha256": "a7c44e5f234cd31b",
+      "runtime_generated": true
+    },
+    {
+      "path": "output/sync_run.json",
+      "bytes": 4277,
+      "sha256": "128a5929e9778b73",
+      "runtime_generated": true
+    },
+    {
+      "path": "dashboard/index.html",
+      "bytes": 218625,
+      "sha256": "3c0834f02c8bbc0b",
+      "runtime_generated": false
+    },
+    {
+      "path": "logs/sync.log",
+      "bytes": 2305,
+      "sha256": "bf7b450c7d83ef08",
+      "runtime_generated": true
+    },
+    {
+      "path": "vendor/prod/src/calibrate.py",
+      "bytes": 15977,
+      "sha256": "79d450f0e1b1fe40",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/src/engine.py",
+      "bytes": 19622,
+      "sha256": "95feeaea9d984e17",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/src/execution.py",
+      "bytes": 10577,
+      "sha256": "f9f5fdeee7a1c1a9",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/data/clean/prices_monthly.csv",
+      "bytes": 35575,
+      "sha256": "c89b04027fbc7c96",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/output/capacity_report.json",
+      "bytes": 7885,
+      "sha256": "e6ba742403232695",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/output/exam_results.json",
+      "bytes": 881,
+      "sha256": "a46345624b86610a",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/output/param_registry.json",
+      "bytes": 5426,
+      "sha256": "c6ab1bb93bea5b34",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/output/remediation_results.json",
+      "bytes": 664,
+      "sha256": "8698f3c6781416ba",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/config/cost_policy.json",
+      "bytes": 1241,
+      "sha256": "48108c4b92136fe4",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/prod/config/disclosure.json",
+      "bytes": 2104,
+      "sha256": "d20bede6e5dd50fb",
+      "runtime_generated": false
+    },
+    {
+      "path": "vendor/data/premium_monthly.csv",
+      "bytes": 14469,
+      "sha256": "30c01430f6777b9f",
+      "runtime_generated": false
+    },
+    {
+      "path": ".github/workflows/mafc-daily-sync.yml",
+      "bytes": 4346,
+      "sha256": "f586240fde213936",
+      "runtime_generated": false
+    },
+    {
+      "path": ".github/workflows/mafc-watchdog.yml",
+      "bytes": 3277,
+      "sha256": "31b2632c9aaf5e8b",
+      "runtime_generated": false
+    }
+  ]
+}

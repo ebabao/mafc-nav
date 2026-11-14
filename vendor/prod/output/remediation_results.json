@@ -1,0 +1,20 @@
+{
+  "_vendored_note": "运行最小子集：仅保留 sync_daily 健康检查读取的 key_metrics；完整整改报告见源工程",
+  "source_file": "prod/output/remediation_results.json",
+  "key_metrics": {
+    "research_cagr": 0.136695,
+    "research_mdd": -0.181793,
+    "research_sharpe": 0.852529,
+    "live_cagr": 0.120209,
+    "live_mdd": -0.17783,
+    "live_sharpe": 0.867312,
+    "cagr_decay_pp": -1.649,
+    "premium_effective_blocks": 42,
+    "brake_triggered_months": 19,
+    "capacity_bottleneck": "标普500ETF(513500)",
+    "capacity_aum_cap_yi": 0.0335,
+    "dsr": 0.3461454424905307,
+    "beta_share": 0.6543158798341183
+  },
+  "verdict": "GO"
+}

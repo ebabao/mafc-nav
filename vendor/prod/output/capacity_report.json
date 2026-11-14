@@ -1,0 +1,313 @@
+{
+  "run_id": "CAP-20261114-104944",
+  "generated_at": "2026-11-14T10:49:45",
+  "method": "akshare 真实 ETF 日成交额（新浪主通道 / 东财备用），每标的尝试<=2次",
+  "participation_limit": 0.01,
+  "adv_window_days": 60,
+  "instruments": {
+    "spx": {
+      "asset": "spx",
+      "name": "标普500ETF(513500)",
+      "w_max": 1.0,
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true,
+          "rows": 3117,
+          "sec": 0.49
+        }
+      ],
+      "as_of": "2026-11-13",
+      "first_of_window": "2026-08-14",
+      "n_days": 60,
+      "adv_cny": 335002258.22,
+      "adv_cny_yi": 3.35,
+      "adv_median_cny_yi": 2.9072,
+      "adv_min_cny_yi": 1.2333,
+      "aum_cap_cny": 3350022.58,
+      "aum_cap_cny_yi": 0.0335
+    },
+    "ixic": {
+      "asset": "ixic",
+      "name": "纳指ETF(513100)",
+      "w_max": 1.0,
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true,
+          "rows": 3229,
+          "sec": 0.28
+        }
+      ],
+      "as_of": "2026-11-13",
+      "first_of_window": "2026-08-14",
+      "n_days": 60,
+      "adv_cny": 413657586.08,
+      "adv_cny_yi": 4.1366,
+      "adv_median_cny_yi": 4.0613,
+      "adv_min_cny_yi": 1.9099,
+      "aum_cap_cny": 4136575.86,
+      "aum_cap_cny_yi": 0.0414
+    },
+    "gold": {
+      "asset": "gold",
+      "name": "黄金ETF(518880)",
+      "w_max": 0.4,
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true,
+          "rows": 3232,
+          "sec": 0.15
+        }
+      ],
+      "as_of": "2026-11-13",
+      "first_of_window": "2026-08-14",
+      "n_days": 60,
+      "adv_cny": 4289051620.25,
+      "adv_cny_yi": 42.8905,
+      "adv_median_cny_yi": 38.4673,
+      "adv_min_cny_yi": 22.1157,
+      "aum_cap_cny": 107226290.51,
+      "aum_cap_cny_yi": 1.0723
+    },
+    "cnbond": {
+      "asset": "cnbond",
+      "name": "国债ETF(511010)",
+      "w_max": 1.0,
+      "available": true,
+      "source": "sina",
+      "attempts": [
+        {
+          "channel": "sina",
+          "ok": true,
+          "rows": 3305,
+          "sec": 0.23
+        }
+      ],
+      "as_of": "2026-11-13",
+      "first_of_window": "2026-08-14",
+      "n_days": 60,
+      "adv_cny": 3705177226.93,
+      "adv_cny_yi": 37.0518,
+      "adv_median_cny_yi": 40.53,
+      "adv_min_cny_yi": 1.8649,
+      "aum_cap_cny": 37051772.27,
+      "aum_cap_cny_yi": 0.3705
+    }
+  },
+  "n_available": 4,
+  "n_missing": 0,
+  "missing_assets": [],
+  "binding_asset": "spx",
+  "binding_name": "标普500ETF(513500)",
+  "aum_cap_cny": 3350022.58,
+  "aum_cap_cny_yi": 0.0335,
+  "scenarios": [
+    {
+      "aum_cny": 1000000.0,
+      "aum_cny_wan": 100.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 100.0,
+          "participation": 0.002985,
+          "pass": true
+        },
+        "ixic": {
+          "order_cny_wan": 100.0,
+          "participation": 0.002417,
+          "pass": true
+        },
+        "gold": {
+          "order_cny_wan": 40.0,
+          "participation": 9.3e-05,
+          "pass": true
+        },
+        "cnbond": {
+          "order_cny_wan": 100.0,
+          "participation": 0.00027,
+          "pass": true
+        }
+      },
+      "all_pass": true
+    },
+    {
+      "aum_cny": 5000000.0,
+      "aum_cny_wan": 500.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 500.0,
+          "participation": 0.014925,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 500.0,
+          "participation": 0.012087,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 200.0,
+          "participation": 0.000466,
+          "pass": true
+        },
+        "cnbond": {
+          "order_cny_wan": 500.0,
+          "participation": 0.001349,
+          "pass": true
+        }
+      },
+      "all_pass": false
+    },
+    {
+      "aum_cny": 10000000.0,
+      "aum_cny_wan": 1000.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 1000.0,
+          "participation": 0.029851,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 1000.0,
+          "participation": 0.024175,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 400.0,
+          "participation": 0.000933,
+          "pass": true
+        },
+        "cnbond": {
+          "order_cny_wan": 1000.0,
+          "participation": 0.002699,
+          "pass": true
+        }
+      },
+      "all_pass": false
+    },
+    {
+      "aum_cny": 50000000.0,
+      "aum_cny_wan": 5000.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 5000.0,
+          "participation": 0.149253,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 5000.0,
+          "participation": 0.120873,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 2000.0,
+          "participation": 0.004663,
+          "pass": true
+        },
+        "cnbond": {
+          "order_cny_wan": 5000.0,
+          "participation": 0.013495,
+          "pass": false
+        }
+      },
+      "all_pass": false
+    },
+    {
+      "aum_cny": 100000000.0,
+      "aum_cny_wan": 10000.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 10000.0,
+          "participation": 0.298505,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 10000.0,
+          "participation": 0.241746,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 4000.0,
+          "participation": 0.009326,
+          "pass": true
+        },
+        "cnbond": {
+          "order_cny_wan": 10000.0,
+          "participation": 0.026989,
+          "pass": false
+        }
+      },
+      "all_pass": false
+    },
+    {
+      "aum_cny": 500000000.0,
+      "aum_cny_wan": 50000.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 50000.0,
+          "participation": 1.492527,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 50000.0,
+          "participation": 1.208729,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 20000.0,
+          "participation": 0.04663,
+          "pass": false
+        },
+        "cnbond": {
+          "order_cny_wan": 50000.0,
+          "participation": 0.134946,
+          "pass": false
+        }
+      },
+      "all_pass": false
+    },
+    {
+      "aum_cny": 1000000000.0,
+      "aum_cny_wan": 100000.0,
+      "legs": {
+        "spx": {
+          "order_cny_wan": 100000.0,
+          "participation": 2.985055,
+          "pass": false
+        },
+        "ixic": {
+          "order_cny_wan": 100000.0,
+          "participation": 2.417458,
+          "pass": false
+        },
+        "gold": {
+          "order_cny_wan": 40000.0,
+          "participation": 0.093261,
+          "pass": false
+        },
+        "cnbond": {
+          "order_cny_wan": 100000.0,
+          "participation": 0.269893,
+          "pass": false
+        }
+      },
+      "all_pass": false
+    }
+  ],
+  "status": "RESOLVED",
+  "verdict": "第8关 WARN 已补真实数据：容量可判定",
+  "caveats": [
+    "ADV 为当前时点近 60 交易日快照，非历史全区间逐期成交额；上线后须按实际执行日 ADV 逐月复核。",
+    "实盘 ETF（513500/513100/518880/511010）与回测指数（SPX/IXIC/XAU/上证国债指数）存在跟踪误差与汇率损益，属执行层风险，本关不量化。",
+    "QDII 外汇额度、单日申赎上限、限购停牌无公开结构化数据，仅作定性约束，不编造数字。",
+    "月频调仓可分摊到多日执行以降低冲击；1% ADV 为文章参考淘汰线，非监管硬约束。",
+    "黄金/国债 ETF 的 ADV 显著小于美股 ETF，是组合真实容量瓶颈。"
+  ],
+  "elapsed_sec": 1.2
+}

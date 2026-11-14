@@ -1,0 +1,17 @@
+{
+  "training_params_source": "prod/output/param_registry.json（上线前研究训练参数）",
+  "inherited": {
+    "dim": 4,
+    "smooth": 0.65,
+    "seed_base": 1000,
+    "degrade_patience": 2,
+    "warm_start": true,
+    "inherited_degraded": true
+  },
+  "train_cost_bps": 5,
+  "eval_cost_bps": 15,
+  "release_rule": "连续 2 折样本外同时跑赢固定版 CAGR 与 Sharpe 才解除降级",
+  "isolation": "进化学习为旁路监控；上线版固定参数始终不变；候选参数不得直接用于实盘",
+  "paper_trading_gate": ">=3 个月实盘观察、信号一致率>=95%、滑点<=15bp、溢价违规=0",
+  "honesty": "当前实盘观察月数=0，净值均为历史回灌演练，不编造实盘记录"
+}

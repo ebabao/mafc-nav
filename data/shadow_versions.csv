@@ -1,0 +1,2 @@
+version,as_of,train,eval,seed,fitness,gene,oos_cagr_cand,oos_sharpe_cand,oos_cagr_fixed,oos_sharpe_fixed,win_streak,degraded,effective,sample_type,note
+s001,2026-11-14,2017-11~2025-10,2025-11~2026-11,1006,24.072,0.3310;0.4112;0.2753;0.2484,0.093717,0.459102,0.069152,0.359881,1,1,fixed,historical_dry_run,训练参数继承上线前研究；当前实盘观察月数=0，净值为历史回灌演练；候选本折跑赢，但需连续 2 折才解除降级，本次仍按固定参数记账
