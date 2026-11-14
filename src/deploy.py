@@ -254,8 +254,10 @@ Get-ScheduledTask -TaskName "mafc-nav-daily-sync" | Select-Object TaskName,State
                    "云端 runner 无需外部 prod 工程；抓数失败按 SOP 回退快照并如实标注",
         "隔离声明": "本工程为 MAFC 固定规则组合，与 ebabao/all-weather-nav（全天候策略 v1.4）"
                     "策略/资产/引擎/仓库/站点/定时任务全部独立，互不引用、互不覆盖",
-        "上线阻塞与回退": launch.get("reason", "—"),
-        "解除方式": "网页新建空公开仓库 ebabao/mafc-nav 后由连接器推送，或运行 deploy_to_github.sh / .ps1",
+        "上线授权方式": launch.get("authorization_method",
+                     "未完成——需用户级令牌授权（Device Flow / PAT）后建仓推送"),
+        "解除方式": "已完成" if ls_status == "REGISTERED" else
+                    "网页新建空公开仓库 ebabao/mafc-nav 后由连接器推送，或运行 deploy_to_github.sh / .ps1",
         "注册方式1_Linux": "crontab -e 追加 deploy/crontab.txt 中的一行（每日 09:30）",
         "注册方式2_Windows": "管理员 PowerShell 运行 deploy/windows_task.ps1",
         "手动触发": f"{PY} src/sync_daily.py",
@@ -264,7 +266,9 @@ Get-ScheduledTask -TaskName "mafc-nav-daily-sync" | Select-Object TaskName,State
         "已完成：prod 最小运行依赖打包进 vendor/（engine/execution/calibrate + 清洗主表 + 溢价序列 + 参数版本库 + 披露/容量/体检与整改结果）",
         "已完成：config/sync_policy.json 的 prod_dir 指向 vendor/prod（相对仓库根目录，本地/云端通用）",
         "已完成：.github/workflows/mafc-daily-sync.yml 与 mafc-watchdog.yml 生成并通过本地验收",
-        "待执行：仓库创建受阻（GitHub App 建仓 403）——网页新建空公开仓库 ebabao/mafc-nav 后推送全部文件；未改动 all-weather-nav 任何文件",
+        ("已完成：仓库 ebabao/mafc-nav 创建（HTTP 201）、40 文件推送 main、Pages 启用（HTTP 201）、"
+         "工作流首次运行 success——全部 API 实测" if ls_status == "REGISTERED" else
+         "待执行：仓库创建受阻——网页新建空公开仓库 ebabao/mafc-nav 后推送全部文件；未改动 all-weather-nav 任何文件"),
     ]
     report = {
         "run_id": run_id, "generated_at": datetime.now().isoformat(timespec="seconds"),
@@ -324,11 +328,14 @@ Get-ScheduledTask -TaskName "mafc-nav-daily-sync" | Select-Object TaskName,State
         f"{health['passed']}/{health['total']} 通过", t, recs)
 
     print("\n" + "=" * 70, flush=True)
+    launch_tail = ("GitHub OAuth Device Flow 用户级授权，仓库 201/推送 40 文件/Pages 201/首次运行 success"
+                   if ls_status == "REGISTERED" else
+                   "GitHub App 集成令牌建仓 403，未谎称上线，待用户级令牌授权")
     print(f"一行汇总：{run_id} mafc-nav 本地部署 {report['verdict']}（7 阶段全 PASS），"
           f"冒烟+幂等复验通过（台账 {n_before}→{n_after} 行不重复），"
           f"看板 {dash_info['size_kb']}KB/{dash_info['figures']}图/{dash_info['tables']}表，"
           f"vendor 已打包、工作流已生成且与 all-weather-nav 完全隔离；"
-          f"云端上线状态 {ls_status}（GitHub App 建仓 403，未谎称上线）；"
+          f"云端上线状态 {ls_status}（{launch_tail}）；"
           f"健康检查 {health['passed']}/{health['total']} → {health['verdict']}", flush=True)
     return 0 if all(checks.values()) else 1
 

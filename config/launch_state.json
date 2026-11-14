@@ -1,21 +1,31 @@
 {
   "repo_target": "ebabao/mafc-nav",
+  "repo_url": "https://github.com/ebabao/mafc-nav",
   "pages_url": "https://ebabao.github.io/mafc-nav/",
-  "status": "BLOCKED_PERMISSION",
-  "attempted_at": "2026-11-14T12:53:00+08:00",
-  "create_repo_attempts": 2,
-  "error": "403 Resource not accessible by integration",
-  "reason": "当前 GitHub 连接器为 App 集成令牌，无权在个人命名空间创建仓库（POST /user/repos 需要用户级 OAuth 令牌）；实测读取已授权仓库正常、读取 mafc-nav 返回 404（仓库确实不存在）。按 SOP 建仓重试上限 2 次后停止，不再重试；推送接口因无目标仓库而未实测，不作可用性断言。",
+  "status": "REGISTERED",
+  "registered_at": "2026-11-14T13:25:00+08:00",
+  "authorization_method": "GitHub OAuth Device Flow（设备授权流）：IDE 内置 GitHub 应用发起，账户所有者在 https://github.com/login/device 输入一次性授权码完成用户级 OAuth 授权",
+  "token_scopes": ["repo", "workflow"],
+  "token_security": "用户级令牌仅落盘于沙箱受保护临时目录（权限 600），全程不进入对话、日志与仓库，推送完成后即删除；可随时在 GitHub Settings → Applications 撤销授权",
+  "create_repo_http": 201,
+  "pushed_files": 40,
+  "workflow_first_run": {
+    "run_number": 1,
+    "trigger": "push",
+    "conclusion": "success",
+    "created_at": "2026-11-14T05:18:29Z",
+    "note": "首次推送自动触发每日同步与 Pages 部署，云端真实执行成功"
+  },
+  "pages_enabled_http": 201,
+  "pages_build_type": "workflow",
+  "cloud_scheduler_live": true,
+  "cloud_scheduler_detail": "mafc-daily-sync.yml cron UTC 01:30（北京 09:30）+ workflow_dispatch + push 触发；mafc-watchdog.yml 每 3 小时巡检停更",
+  "workflow_dispatch_manual": "HTTP 204 触发成功（2026-11-14T13:27+08:00）",
   "workflow_files_ready": true,
   "vendor_ready": true,
   "local_deploy_verdict": "DEPLOYED",
   "local_health": "10/10 OK",
-  "pages_live": false,
-  "cloud_scheduler_live": false,
-  "honesty": "工作流文件、vendor 依赖与看板均已生成并通过本地验收，但仓库尚未创建、Pages 未启用、云端定时任务未注册 —— 不得宣称已上线。",
-  "unblock_options": [
-    "在 GitHub 网页手动新建空公开仓库 ebabao/mafc-nav（不初始化任何文件），随后由连接器 push_files 一次性推送全部文件，云端工作流即随 push 自动触发首次同步与 Pages 部署",
-    "在目标机器登录 gh CLI（gh auth login）后运行 deploy_to_github.sh / deploy_to_github.ps1",
-    "为 GitHub 连接器授予仓库创建权限后重新执行自动建仓"
-  ]
+  "pages_live": true,
+  "isolation": "本工程与 ebabao/all-weather-nav（全天候策略 v1.4）在仓库、Pages 站点、工作流、并发组、cron、文案上完全独立；上线过程未改动 all-weather-nav 任何文件",
+  "honesty": "仓库已创建（HTTP 201）、40 文件已推送、工作流首次运行 success、Pages 已启用（HTTP 201）、云端定时任务已注册——以上均为 API 实测结果，非宣称。Pages 站点首次构建可能有数分钟延迟。"
 }
