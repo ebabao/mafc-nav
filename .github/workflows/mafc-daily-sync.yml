@@ -20,6 +20,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/mafc-daily-sync.yml'
+      - 'dashboard/**'
       - 'src/**'
       - 'config/**'
       - 'vendor/**'
