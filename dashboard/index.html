@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>mafc-nav · MAFC 固定规则组合净值看板</title>
-<meta name="description" content="MAFC 固定规则组合（RS 轮动 + 双均线 MA5/12 + 黄金 + 中国利率债）每日同步的净值、回撤、月度收益、分年统计、目标仓位、影子进化与强制披露数据接口">
+<meta name="description" content="MAFC 固定规则组合（RS 轮动 + 双均线 MA5/12 + 黄金 + 中国利率债）每日同步的净值、回撤、月度收益、分年统计、目标仓位与影子进化数据接口">
 <style>
 :root{--navy:#132a4a;--navy2:#1f3a5f;--brand:#2c5282;--gold:#b8860b;--ink:#22303f;
  --mut:#6b7a8c;--line:#dde4ec;--bg:#f4f6f9;--up:#d93025;--down:#0f9d58;--blue:#2563eb;
@@ -175,7 +175,7 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="navlinks" id="navlinks">
     <a href="#overview">绩效概览</a><a href="#equity">净值对比</a><a href="#pit">爬坑体验</a>
     <a href="#monthly">月度收益</a><a href="#weights">仓位容量</a><a href="#signal">调仓信号</a>
-    <a href="#shadow">影子进化</a><a href="#disclosure">披露验收</a><a href="#ops">同步部署</a>
+    <a href="#shadow">影子进化</a>
   </div>
   <div class="live" id="live"><i></i><span>接口加载中</span></div>
 </div></nav>
@@ -196,7 +196,6 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="card"><div class="kpis" id="kpis"></div></div>
   <div class="targets" id="targets"></div>
   <div class="note" id="basis"></div>
-  <div class="card" style="margin-top:12px"><div class="body"><div class="note" id="isolation" style="margin:0"></div></div></div>
 </section>
 
 <section class="sec" id="equity">
@@ -250,8 +249,6 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
       <div class="rcgrid" id="rcgrid"></div>
       <div class="note" id="capNote"></div></div></div>
   </div>
-  <div class="card" style="margin-top:14px"><h3>固定参数基线（上线版）</h3><div class="body"><div class="kv" id="paramKV"></div>
-    <div class="note" id="paramNote"></div></div></div>
 </section>
 
 <section class="sec" id="signal">
@@ -287,54 +284,6 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="card" style="margin-top:14px"><div class="body"><div class="note" id="shNote" style="margin:0"></div></div></div>
 </section>
 
-<section class="sec" id="disclosure">
-  <h2>强制披露、十关体检与整改验收</h2>
-  <div class="grid2">
-    <div class="card"><h3>强制披露（对外业绩展示必须同时给出）</h3><div class="body">
-      <div class="discbar" id="discBar"></div>
-      <div class="kv" id="discKV"></div>
-      <div class="note"><strong>禁用表述（如实列示）：</strong></div>
-      <ul class="forbid" id="forbidList"></ul></div></div>
-    <div class="card"><h3>实盘体检十关与整改验收</h3><div class="body">
-      <div class="kv" id="examKV"></div>
-      <div class="note" id="examNote"></div></div></div>
-  </div>
-  <div class="card" style="margin-top:14px"><h3>执行口径瀑布 S0 → S4（成本四层逐层加码）</h3><div class="body">
-    <div class="ladder" id="ladder"></div>
-    <div class="tw"><table>
-      <thead><tr><th>情景</th><th>单边成本</th><th>QDII 溢价过滤</th><th>回撤熔断</th><th>年化收益</th><th>最大回撤</th><th>Sharpe</th></tr></thead>
-      <tbody id="ladBody"></tbody></table></div>
-    <div class="note">S3 为<strong>唯一上线口径</strong>；S0（研究基线 5bp）与 S4（30bp 压力口径）仅作边界对照。
-      数据取自 <code>vendor/prod/output/execution_scenarios.json</code>（整改报告真实结果），未改动、未编造。</div>
-  </div></div>
-  <div class="card" style="margin-top:14px"><div class="body"><div class="note" id="discNote" style="margin:0"></div></div></div>
-</section>
-
-<section class="sec" id="ops">
-  <h2>工程指标、自动化同步与每日巡检</h2>
-  <div class="grid2">
-    <div class="card"><h3>策略工程指标</h3><div class="body"><div class="kv" id="engKV"></div></div></div>
-    <div class="card"><h3>自动化同步与独立部署</h3><div class="body"><div class="kv" id="opsKV"></div>
-      <div class="note">每日由定时任务运行 <code>src/sync_daily.py</code>：真实行情探针 → 模型回放 →
-      生成 <code>data/</code> 同源接口 → 写入独立 Pages 发布目录。本页为静态文件，通过
-      <code>fetch(..., {cache:"no-store"})</code> 读取最新接口，因此<strong>页面无需重建即可每日同步</strong>，
-      策略模型接口与看板数据始终同源。仓库内另备 GitHub Actions 工作流
-      （<code>mafc-daily-sync.yml</code> + <code>mafc-watchdog.yml</code>），在独立仓库与独立 Pages 站点上自动部署与停更重启。</div></div></div>
-  </div>
-  <div class="grid2" style="margin-top:14px">
-    <div class="card"><h3>本次同步阶段</h3><div class="tw"><table>
-      <thead><tr><th>阶段</th><th>状态</th><th>说明</th></tr></thead>
-      <tbody id="stageBody"></tbody></table></div></div>
-    <div class="card"><h3>最近同步巡检记录</h3><div class="tw"><table>
-      <thead><tr><th>run_id</th><th>时间</th><th>状态</th><th>数据源</th><th>新增</th><th>回退</th><th>对账偏差</th></tr></thead>
-      <tbody id="auditBody"></tbody></table></div>
-      <div class="body"><div class="note" id="auditNote"></div></div></div>
-  </div>
-  <div class="card" style="margin-top:14px"><h3>日台账（最近记录）</h3><div class="tw"><table>
-    <thead><tr><th>日期</th><th>上线净值</th><th>净值来源</th><th>影子版本</th><th>状态</th></tr></thead>
-    <tbody id="ledgerBody"></tbody></table></div></div>
-</section>
-
 <footer id="footer">数据来源：本仓库同源策略数据接口（data/meta.json、nav.json、signal.json、shadow.json、audit.json）。<br>
 策略净值 = vendor/prod 引擎对真实月度行情的现场回测；页面仅用于策略研究，不构成投资建议。市场有风险，投资需谨慎。</footer>
 </div>
@@ -357,13 +306,17 @@ const badge=(t,k)=>`<span class="badge ${k||""}">${esc(t)}</span>`;
 /* ---------- 通用 SVG 折线 / 面积图（无外部依赖） ---------- */
 function svgChart(box,dates,series,opt){
  opt=opt||{};const W=Math.max(box.clientWidth||1000,320),H=W<560?250:340;
- const PL=W<560?46:62,PR=14,PT=14,PB=30,pw=W-PL-PR,ph=H-PT-PB;
+ const PR=14,PT=14,PB=30;
  let lo=Infinity,hi=-Infinity;
  series.forEach(s=>s.values.forEach(v=>{if(Number.isFinite(v)){lo=Math.min(lo,v);hi=Math.max(hi,v);}}));
  if(!Number.isFinite(lo))return;
  if(opt.zeroBase)lo=Math.min(0,lo);if(opt.ceilingZero)hi=Math.max(0,hi);
  const span=Math.max(hi-lo,1e-6),pad=span*.08;
  if(!opt.ceilingZero)hi+=pad;if(!opt.zeroBase)lo-=pad;
+ /* 动态左边距：按最长 Y 轴刻度标签预留宽度，避免 4 位数百分比(如 1199.7%)被 SVG 左边界裁掉首位 */
+ const dig=opt.digits==null?1:opt.digits;let labLen=0;
+ for(let k=0;k<=4;k++)labLen=Math.max(labLen,nf(hi-(hi-lo)*k/4,dig,opt.unit||"").length);
+ const PL=Math.max(W<560?46:62,Math.ceil(labLen*7.2)+14),pw=W-PL-PR,ph=H-PT-PB;
  const X=i=>PL+(dates.length<=1?pw/2:i/(dates.length-1)*pw),Y=v=>PT+(hi-v)/(hi-lo)*ph;
  let grid="",ax="";
  for(let k=0;k<=4;k++){const yy=PT+ph*k/4,val=hi-(hi-lo)*k/4;
@@ -466,7 +419,6 @@ function renderKPI(){
  $("#basis").innerHTML=`<strong>口径说明：</strong>${esc(S.meta.basis)} 策略与对照指标由
   <code>vendor/prod</code> 引擎逐月回放生成，与整改报告 key_metrics 对账偏差
   <b>${S.meta.reconcile.max_abs_diff_pp==null?"—":S.meta.reconcile.max_abs_diff_pp+"pp"}</b>（${S.meta.reconcile.ok?"通过":"如实披露"}）。`;
- $("#isolation").innerHTML=`<strong>工程边界：</strong>${esc(S.meta.isolation)}`;
 }
 function renderEquity(){
  const n=S.nav,ix=viewIdx(),d=pick(n.dates,ix);
@@ -542,11 +494,6 @@ function renderWeights(){
   <b>${esc(cap.binding_name)}</b>，AUM 上限约 <b>${nf(cap.aum_cap_cny_wan,0)} 万元</b>
   （${nf(cap.aum_cap_cny_yi,4)} 亿元）；真实 ADV 标的 ${cap.n_available}/4。
   ${esc(cap.method||"")}`;
- const p=s.params||{},keys=["ma_fast","ma_slow","mom_lb","rs_lb","w_eq","w_gold","w_cnbond","bear_bond","b_thr","dd_thr","brake","max_lev","bond_as_cash","gold_only_in_bull"];
- $("#paramKV").innerHTML=keys.map(k=>`<div class="k">${esc(k)}</div><div class="v">${esc(p[k]==null?"—":p[k])}</div>`).join("");
- $("#paramNote").innerHTML=`参数指纹 <b>${esc(s.params_fp)}</b>（对固定参数基线做 SHA1 取前 10 位，便于版本对齐）。
-  ${esc(s.policy_note)} 溢价覆盖：${esc((s.premium_coverage||{}).from||"—")} ~ ${esc((s.premium_coverage||{}).to||"—")}，
-  真实月 ${(s.premium_coverage||{}).n_real_months==null?"—":s.premium_coverage.n_real_months} 个；估算代理非官方 IOPV，2014-03 前按 0（过滤不生效）。`;
 }
 function renderSignal(){
  const s=S.sig;
@@ -604,93 +551,7 @@ function renderShadow(){
   Sharpe ${nf(cand.sharpe,3)} vs ${nf(fix.sharpe,3)}），但<strong>单折跑赢不足以解除降级</strong>，
   因此影子账户仍按<strong>固定参数</strong>记账，与上线版净值一致。${esc(s.note||"")}`;
 }
-function renderDisclosure(){
- const d=S.meta.disclosure,m=S.meta,ex=m.exam||{},rem=m.remediation||{},cap=m.capacity||{};
- $("#discBar").innerHTML=
-  `<span class="pill bad">DSR <b>${nf(d.dsr,4)}</b> &lt; ${nf(d.dsr_threshold,2)}</span>`+
-  `<span class="pill">试验次数下界 N ≥ <b>${Number(d.n_lower||0).toLocaleString()}</b></span>`+
-  `<span class="pill">beta 占比 <b>${nf(d.beta_share_pct,1,"%")}</b></span>`+
-  `<span class="pill">择时净增量 Sharpe <b>${nf(d.timing_increment_sharpe,3)}</b></span>`+
-  `<span class="pill">置换检验 p <b>${nf(d.permutation_p,4)}</b></span>`;
- $("#discKV").innerHTML=kv({
-  "对外结论":d.external_verdict,
-  "Harvey-Liu t":nf(d.harvey_liu_t,4),
-  "多重检验期望最大 Sharpe":nf(d.expected_max_sr_annual,4),
-  "观察 Sharpe（研究口径）":nf(S.nav.metrics.research.sharpe,4),
-  "禁用表述条数":d.forbidden_claims_count,
-  "容量 AUM 上限":nf(cap.aum_cap_cny_wan,0," 万元"),
-  "容量瓶颈":cap.binding_name});
- $("#forbidList").innerHTML=(d.forbidden_claims||[]).map(x=>`<li>${esc(x)}</li>`).join("");
- const c=ex.counts||{};
- $("#examKV").innerHTML=kv({
-  "十关体检结论":ex.verdict,
-  "绿 / 黄 / 红":`${c.PASS||0} / ${c.WARN||0} / ${c.FAIL||0}`,
-  "体检 run_id":ex.run_id,
-  "整改验收":`${rem.checks_pass} / ${rem.checks_total} PASS · ${rem.verdict}`,
-  "原回归验收":rem.regression,
-  "与整改前逐项一致":String(rem.identical_to_before),
-  "佣金":m.cost_layers["佣金"]||"—",
-  "印花税":m.cost_layers["印花税"]||"—",
-  "滑点":m.cost_layers["滑点"]||"—",
-  "冲击成本":m.cost_layers["冲击成本"]||"—"});
- $("#examNote").innerHTML=`按文章《回测完美、实盘亏光？十道关卡》口径为
-  <strong>CONDITIONAL-GO</strong>（6 绿 / 4 黄 / 0 红）；按严格 DSR ≥ 0.95 口径仍为
-  <strong>NO-GO</strong>。影子账户进化学习是旁路监控，<strong>不能提高统计证据强度</strong>，
-  上线版固定参数始终不变。`;
- const sc=S.nav.scenarios||[],mx=Math.max.apply(null,sc.map(x=>x.cagr||0).concat([1]));
- $("#ladder").innerHTML=sc.map(x=>`<div class="lad ${x.is_live?"is-live":""}">
-  ${x.is_live?'<span class="flag">上线口径</span>':""}
-  <div class="tag">${esc(x.short)}<em>${x.cost_bps}bp</em></div>
-  <div class="big">${nf(x.cagr,2,"%")}</div>
-  <div class="sub">MDD ${nf(x.mdd,2,"%")} · Sharpe ${nf(x.sharpe,3)}<br>
-   溢价过滤 ${x.premium_filter?"开":"关"} · 熔断 ${x.brake?"开":"关"}</div>
-  <div class="bar"><i style="width:${(Math.max(x.cagr,0)/mx*100).toFixed(1)}%"></i></div></div>`).join("");
- $("#ladBody").innerHTML=sc.map(x=>`<tr><td>${esc(x.label)}</td><td>${x.cost_bps} bp</td>
-  <td>${x.premium_filter?"启用":"—"}</td><td>${x.brake?"启用":"—"}</td>
-  <td class="${cls(x.cagr)}">${nf(x.cagr,2,"%",true)}</td>
-  <td class="down">${nf(x.mdd,2,"%")}</td><td>${nf(x.sharpe,3)}</td></tr>`).join("");
- $("#discNote").innerHTML=`<strong>双口径结论未变：</strong>${esc(d.external_verdict)}。
-  对外披露一律使用 <strong>live 15bp + 溢价过滤 + 熔断</strong> 口径（${nf(S.nav.metrics.live.cagr,2,"%")} /
-  ${nf(S.nav.metrics.live.mdd,2,"%")} / ${nf(S.nav.metrics.live.sharpe,3)}），
-  不得引用 research 5bp 的 ${nf(S.nav.metrics.research.cagr,2,"%")}。`;
-}
-function renderOps(){
- const e=S.meta.engineering||{},dep=S.meta.deployment||{},a=S.audit||{};
- $("#engKV").innerHTML=kv(e);
- const sy=S.meta.sync||{},p=(a.policy||{});
- $("#opsKV").innerHTML=kv({
-  "最近同步":esc(sy.last_sync?sy.last_sync.replace("T"," ").slice(0,19):"—"),
-  "run_id":esc(sy.run_id),"状态 / 数据源":esc(sy.status)+" / "+esc(sy.source),
-  "探针成功标的":`${sy.scraped} / 4`,"本次新增月度点":String(sy.new),
-  "重试次数":String(sy.retry),"失败回退":p.fallback||"—",
-  "回退开关":sy.fallback?"已触发":"未触发",
-  "发布目录":"site/data · 同源接口写入即线上生效",
-  "参数回退":"champion/challenger · 连续 2 折才解除降级",
-  "幂等策略":p.idempotency||"—",
-  "Pages 站点":dep.pages_url||"—",
-  "云端定时任务":dep.cloud_scheduler_live?"REGISTERED":"未注册",
-  "Pages 状态":dep.pages_live?"LIVE":"—",
-  "工程状态":dep.status||"—"});
- $("#stageBody").innerHTML=(a.stages||[]).map(s=>`<tr><td>${esc(s.stage)}</td>
-  <td>${s.status==="PASS"?badge("PASS","ok"):badge(s.status,"on")}</td>
-  <td style="text-align:left;white-space:normal">${esc(s.detail)}</td></tr>`).join("")
-  ||'<tr><td colspan="3">—</td></tr>';
- const runs=a.runs||[];
- $("#auditBody").innerHTML=runs.map(r=>`<tr><td>${esc(r.run_id)}</td><td>${esc((r.at||"").replace("T"," ").slice(0,19))}</td>
-  <td>${r.status==="OK"?badge(r.status,"ok"):badge(r.status,"on")}</td>
-  <td>${esc(r.source||"—")}</td><td>${r.new==null?"—":r.new}</td>
-  <td>${r.fallback?"是":"否"}</td><td>${r.reconcile_pp==null?"—":r.reconcile_pp+"pp"}</td></tr>`).join("")
-  ||'<tr><td colspan="7">—</td></tr>';
- $("#auditNote").innerHTML=esc(a.runs_note||"")+" "+esc(a.metrics_note||"");
- $("#ledgerBody").innerHTML=(a.ledger||[]).slice(-10).reverse().map(r=>`<tr><td>${esc(r.date)}</td>
-  <td>${nf(parseFloat(r.nav_live),4)}</td><td>${esc(r.nav_source||"—")}</td>
-  <td>${esc(r.shadow_version||"—")}</td><td>${r.run_id?badge("OK","ok"):"—"}</td></tr>`).join("")
-  ||'<tr><td colspan="5">—</td></tr>';
- $("#footer").innerHTML=`数据来源：本仓库同源策略数据接口（data/meta.json、nav.json、signal.json、shadow.json、audit.json）。<br>
-  ${esc(S.meta.brand.name)} ｜ 每日同步 <code>src/sync_daily.py</code> ｜ 接口生成 <code>src/dashboard.py</code> ｜ 策略源 ${esc(S.meta.source_prod||"—")}。<br>
-  策略净值 = vendor/prod 引擎对真实月度行情的现场回测；页面仅用于策略研究，不构成投资建议。市场有风险，投资需谨慎。`;
-}
-function renderAll(){renderHeader();renderKPI();renderEquity();renderMonthly();renderWeights();renderSignal();renderShadow();renderDisclosure();renderOps();}
+function renderAll(){renderHeader();renderKPI();renderEquity();renderMonthly();renderWeights();renderSignal();renderShadow();}
 function setSeg(sel,key,val){$$(sel+" button").forEach(b=>b.classList.toggle("on",b.dataset[key]===val));}
 $$("#gran button").forEach(b=>b.addEventListener("click",()=>{S.gran=b.dataset.g;setSeg("#gran","g",S.gran);renderEquity();}));
 $$("#range button").forEach(b=>b.addEventListener("click",()=>{S.range=b.dataset.r;setSeg("#range","r",S.range);renderEquity();}));
