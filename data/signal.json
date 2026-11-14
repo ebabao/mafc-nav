@@ -1,0 +1,155 @@
+{
+  "as_of": "2026-11-14",
+  "decision_month": "2026-10",
+  "nav_month": "2026-11",
+  "lag_note": "决策月 t 的权重在 t+1 月生效，因此最新决策月比最新净值月早 1 个月；下表为为该净值月设定的目标仓位，不是当月收盘持仓。",
+  "regime": 0,
+  "rs_pick": "spx",
+  "weights": "cnbond:1.000",
+  "exposure": 1.0,
+  "premium_pct": 3.5719,
+  "premium_blocked": true,
+  "premium_threshold_pct": 2.0,
+  "bear_bond_active": 1,
+  "bond_cash": 0,
+  "current": [
+    {
+      "code": "spx",
+      "name": "标普500ETF(513500)",
+      "role": "海外股票 / QDII",
+      "weight": 0.0
+    },
+    {
+      "code": "ixic",
+      "name": "纳指ETF(513100)",
+      "role": "海外股票 / QDII",
+      "weight": 0.0
+    },
+    {
+      "code": "gold",
+      "name": "黄金ETF(518880)",
+      "role": "黄金",
+      "weight": 0.0
+    },
+    {
+      "code": "cnbond",
+      "name": "国债ETF(511010)",
+      "role": "中国利率债 / 空头承接",
+      "weight": 100.0
+    }
+  ],
+  "assets": [
+    {
+      "code": "spx",
+      "name": "标普500ETF(513500)",
+      "role": "海外股票 / QDII",
+      "w_max": 1.0,
+      "adv_cny_yi": 3.35,
+      "aum_cap_cny_wan": 335.0,
+      "available": true,
+      "source": "sina"
+    },
+    {
+      "code": "ixic",
+      "name": "纳指ETF(513100)",
+      "role": "海外股票 / QDII",
+      "w_max": 1.0,
+      "adv_cny_yi": 4.1366,
+      "aum_cap_cny_wan": 414.0,
+      "available": true,
+      "source": "sina"
+    },
+    {
+      "code": "gold",
+      "name": "黄金ETF(518880)",
+      "role": "黄金",
+      "w_max": 0.4,
+      "adv_cny_yi": 42.8905,
+      "aum_cap_cny_wan": 10723.0,
+      "available": true,
+      "source": "sina"
+    },
+    {
+      "code": "cnbond",
+      "name": "国债ETF(511010)",
+      "role": "中国利率债 / 空头承接",
+      "w_max": 1.0,
+      "adv_cny_yi": 37.0518,
+      "aum_cap_cny_wan": 3705.0,
+      "available": true,
+      "source": "sina"
+    }
+  ],
+  "params": {
+    "ma_fast": 5,
+    "ma_slow": 12,
+    "mom_lb": 12,
+    "rs_lb": 12,
+    "w_eq": 1.0,
+    "w_gold": 0.4,
+    "w_cnbond": 0.0,
+    "g_thr": 0.0,
+    "b_thr": 0.0,
+    "use_g_ma": true,
+    "use_b_ma": false,
+    "bear_bond": 1.0,
+    "bond_as_cash": true,
+    "gold_only_in_bull": true,
+    "max_lev": 1.2,
+    "vol_target": null,
+    "dd_thr": null,
+    "brake": 0.6,
+    "budget_split": false
+  },
+  "params_fp": "08D31D5157",
+  "policy_note": "上线版在固定参数基线上另启用 dd_thr=0.15 / brake=0.6 回撤熔断与 15bp 单边成本，见 live_policy。",
+  "live_policy": {
+    "cost_bps_one_way": 15,
+    "premium_threshold": 0.02,
+    "dd_thr": 0.15,
+    "brake": 0.6,
+    "max_lev": 1.2
+  },
+  "probe": [
+    {
+      "asset": "spx",
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": 1
+    },
+    {
+      "asset": "ixic",
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": 1
+    },
+    {
+      "asset": "gold",
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": 1
+    },
+    {
+      "asset": "cnbond",
+      "last_trade_date": "2026-11-13",
+      "available": true,
+      "source": "sina",
+      "attempts": 1
+    }
+  ],
+  "probe_note": "探针仅用于判断数据新鲜度，不写入模型价格数据；补数最多尝试 2 次（新浪→东财），失败如实标 unavailable，不填假设值。",
+  "premium_coverage": {
+    "source": "../data/premium_monthly.csv",
+    "proxy_not_iopv": true,
+    "from": "2014-03",
+    "to": "2026-11",
+    "n_real_months": 153,
+    "n_aligned_in_backtest": 153,
+    "n_total_backtest_months": 241,
+    "missing_filled_zero": true,
+    "note": "2014-03 前无真实溢价数据，按 0 处理（过滤不生效）；估算代理非官方 IOPV"
+  }
+}

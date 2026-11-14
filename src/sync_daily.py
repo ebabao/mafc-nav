@@ -204,7 +204,8 @@ def main():
     import dashboard
     dash_info = dashboard.build()
     log("Stage5 看板重生成", "PASS",
-        f"{dash_info['file']} {dash_info['size_kb']}KB / {dash_info['figures']} 图", t, recs)
+        f"{dash_info['file']} {dash_info['size_kb']}KB / {dash_info['interfaces']} 个同源接口 / "
+        f"{dash_info['nav_points']} 净值点", t, recs)
 
     # Stage 6 健康检查
     t = time.time()
@@ -214,11 +215,26 @@ def main():
                          encoding="utf-8")) if os.path.exists(
                              os.path.join(PROD, "output", "remediation_results.json")) else {}
     ref = rem.get("key_metrics", {}).get("live_cagr")
+    iface_names = ("meta.json", "nav.json", "signal.json", "shadow.json", "audit.json")
+    iface_paths = [os.path.join(DATA, n) for n in iface_names]
+    nav_ok = False
+    try:
+        nav_iface = json.load(open(iface_paths[1], encoding="utf-8"))
+        nav_ok = (len(nav_iface["dates"]) == len(nav_iface["nav"]) == len(nav_iface["dd"])
+                  and len(nav_iface["dates"]) == len(model["nav_series"])
+                  and abs(nav_iface["nav"][-1] - model["nav_series"][-1]["live"]) < 1e-6)
+    except Exception:
+        pass
     checks = {
         "必需文件齐全": all(os.path.exists(p) for p in
                        (html_path, os.path.join(DATA, "model_state.json"),
                         SHADOW_STATE, LEDGER)),
         "看板结尾完整": html.rstrip().endswith("</html>"),
+        "同源接口齐全（5 个）": all(os.path.exists(p) and os.path.getsize(p) > 200
+                              for p in iface_paths),
+        "接口与模型净值一致": nav_ok,
+        "SVG 图表容器齐全": all(x in html for x in
+                          ('id="c_eq"', 'id="c_dd"', 'id="c_sh"', 'id="heat"')),
         "无占位残留": not any(x in html for x in ("{D[", "{M[", "TODO", "undefined", "待填充")),
         "口径数字一致": (ref is None or abs(model["metrics"]["live"]["cagr"] - ref) < 1e-4),
         "引擎成本已恢复": bool(model["engine_cost_restored"]),
@@ -230,7 +246,7 @@ def main():
         t, recs)
 
     md = sum(1 for p in (os.path.join(DATA, "model_state.json"), SHADOW_STATE,
-                         LEDGER, html_path) if os.path.exists(p))
+                         LEDGER, html_path, *iface_paths) if os.path.exists(p))
     result = {
         "run_id": run_id, "as_of": date,
         "generated_at": datetime.now().isoformat(timespec="seconds"),

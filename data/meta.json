@@ -1,0 +1,135 @@
+{
+  "brand": {
+    "code": "mafc-nav",
+    "mark": "MF",
+    "name": "MAFC 固定规则组合",
+    "short_name": "MAFC 研究看板",
+    "subtitle": "RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债",
+    "eyebrow": "MAFC FIXED-RULE COMPOSITE",
+    "version": "上线口径 v1.0（S3）"
+  },
+  "as_of": "2026-11-14",
+  "generated_at": "2026-11-14T13:27:16",
+  "period": {
+    "start": "2007-11",
+    "end": "2026-11",
+    "n_months": 228
+  },
+  "model_code": "MAFC-RS-MA512-CNBOND",
+  "params_fp": "08D31D5157",
+  "source_prod": "mafc-nav/vendor/prod",
+  "basis": "上线口径 = 15bp 单边成本 + QDII 溢价>2% 不建仓 + 回撤熔断，是唯一实盘决策口径；研究口径 5bp 仅作对照，不得用于对外业绩展示。日间无新月度行情时净值沿用上月（carry_forward），不编造日波动；月度净值仅在月末数据确认后更新。",
+  "sync": {
+    "last_sync": "2026-11-14T13:27:16",
+    "run_id": "SYNC-20261114-132709",
+    "status": "OK",
+    "source": "sina",
+    "new": 0,
+    "scraped": 4,
+    "retry": 0,
+    "fallback": false,
+    "elapsed_sec": 7.0
+  },
+  "live_policy": {
+    "cost_bps_one_way": 15,
+    "premium_threshold": 0.02,
+    "dd_thr": 0.15,
+    "brake": 0.6,
+    "max_lev": 1.2
+  },
+  "reconcile": {
+    "ok": true,
+    "max_abs_diff_pp": 0.0,
+    "note": "模型接口 live CAGR 与整改报告 key_metrics 对账"
+  },
+  "targets": [
+    {
+      "title": "整改验收 13/13 PASS",
+      "value": "13/13",
+      "note": "verdict GO",
+      "ok": true
+    },
+    {
+      "title": "原回归 GO 10/10 不回退",
+      "value": "10/10 GO",
+      "note": "零回退 · 逐项一致",
+      "ok": true
+    },
+    {
+      "title": "严格 DSR ≥ 0.95",
+      "value": "0.3461",
+      "note": "NO-GO · N≥24,104",
+      "ok": false
+    }
+  ],
+  "disclosure": {
+    "dsr": 0.3461,
+    "dsr_threshold": 0.95,
+    "n_lower": 24104,
+    "expected_max_sr_annual": 0.9443,
+    "harvey_liu_t": 3.6749,
+    "beta_share_pct": 65.43,
+    "timing_increment_sharpe": 0.2947,
+    "permutation_p": 0.029,
+    "external_verdict": "CONDITIONAL-GO（文章口径）/ NO-GO（严格 DSR 口径）",
+    "forbidden_claims": [
+      "「策略年化 13.67%」作为实盘预期（该数字为 research 5bp 口径）",
+      "「十关全通过可无条件上线」（实为 6绿4黄、双口径 CONDITIONAL-GO）",
+      "「黄金/国债 ETF 是容量瓶颈」（真实 ADV 显示瓶颈为 QDII 标普500ETF）",
+      "省略 DSR / 试验次数 / beta 归因的任何对外业绩展示"
+    ],
+    "forbidden_claims_count": 4
+  },
+  "capacity": {
+    "aum_cap_cny_yi": 0.0335,
+    "aum_cap_cny_wan": 335.0,
+    "binding_name": "标普500ETF(513500)",
+    "n_available": 4,
+    "status": "RESOLVED",
+    "method": "akshare 真实 ETF 日成交额（新浪主通道 / 东财备用），每标的尝试<=2次",
+    "participation_limit": 0.01,
+    "adv_window_days": 60
+  },
+  "exam": {
+    "run_id": "EXAM-20261114-093530",
+    "verdict": "CONDITIONAL-GO（有条件上线）",
+    "counts": {
+      "PASS": 6,
+      "WARN": 4,
+      "FAIL": 0
+    }
+  },
+  "remediation": {
+    "run_id": "REM-20261114-104944",
+    "verdict": "GO",
+    "checks_pass": 13,
+    "checks_total": 13,
+    "regression": "10/10 GO",
+    "identical_to_before": true
+  },
+  "cost_layers": {
+    "佣金": "已计入（research 5bp / live 15bp 单边）",
+    "印花税": "ETF 场内免征；个股/QDII 申赎需另计 —— 定性披露，不编造税率",
+    "滑点": "已含在 live 15bp（文章「来回千三」口径）",
+    "冲击成本": "由 capacity.py 的 1% ADV 约束控制；QDII 溢价一次性择时误差由 premium_guard 控制"
+  },
+  "engineering": {
+    "策略": "固定规则组合：RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债",
+    "参数维度": "4 维进化边界（w_gold / bear_bond / b_thr / w_cnbond）· smooth=0.65",
+    "训练参数来源": "vendor/prod/output/param_registry.json（上线前研究训练参数）",
+    "影子旁路": "train 2017-11~2025-10 → eval 2025-11~2026-11；候选不得直接用于实盘",
+    "成本口径": "research 5bp / live 15bp / stress 30bp 单边；四层成本见 cost_layers",
+    "数据纯度": "真实 ETF/指数月度行情；溢价序列 2014-03 起 153 个真实月，之前按 0（过滤不生效）"
+  },
+  "deployment": {
+    "pages_url": "https://ebabao.github.io/mafc-nav/",
+    "repo_url": "https://github.com/ebabao/mafc-nav",
+    "status": "REGISTERED",
+    "pages_live": true,
+    "cloud_scheduler_live": true,
+    "cloud_scheduler_detail": "mafc-daily-sync.yml cron UTC 01:30（北京 09:30）+ workflow_dispatch + push 触发；mafc-watchdog.yml 每 3 小时巡检停更",
+    "pushed_files": 40,
+    "isolation": "本工程与 ebabao/all-weather-nav（全天候策略 v1.4）在仓库、Pages 站点、工作流、并发组、cron、文案上完全独立；上线过程未改动 all-weather-nav 任何文件"
+  },
+  "isolation": "本看板为 mafc-nav · MAFC 固定规则组合的独立工程，与 ebabao/all-weather-nav（全天候策略 v1.4 · 七 ETF 风险平价）是两套完全不同的策略：底层资产、模型引擎、参数体系、仓库、Pages 站点、定时任务均相互独立，互不引用、互不覆盖、不共享发布产物。本页沿用参考页的版式与同源接口架构，所有数字均来自本工程 vendor/prod 引擎现场回测与真实行情探针。"
+}

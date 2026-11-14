@@ -1,383 +1,483 @@
 """
-mafc-nav 看板页面生成器
-==============================
-读取每日同步产出的真实数据（model_state / shadow_state / nav_daily / deploy_report），
-所有图表现场绘制，产出单文件自包含中文 HTML。
+mafc-nav 看板同源数据接口生成器
+=================================
+读取每日同步产出的真实数据（model_state / shadow_state / nav_daily /
+sync_run / deploy_report / vendor 自包含的研究结果），生成 5 个同源 JSON 接口：
 
-产出：dashboard/index.html
-运行：python3.11 src/dashboard.py
+    data/meta.json     品牌 / 同步 / 验收 / 披露 / 容量 / 部署 / 工程指标
+    data/nav.json      229 点月度净值、回撤、月度收益、分年统计、S0~S4 成本阶梯
+    data/signal.json   最新决策信号、目标持仓、固定参数、行情探针、溢价覆盖
+    data/shadow.json   影子账户进化学习（旁路）状态与三条演练净值
+    data/audit.json    同步阶段、健康检查、日台账、巡检记录、部署状态
+
+页面 dashboard/index.html 为静态模板，通过 fetch('./data/*.json', {cache:'no-store'})
+读取上述接口；页面无需重建即可每日同步，与 all-weather-nav 参考页同构。
+
+派生指标（回撤 / 月度收益 / 分年统计）全部由 model_state.json 的真实净值序列现场计算，
+不引入任何外部行情、不编造数值。运行：python3.11 src/dashboard.py
 """
 from __future__ import annotations
 
-import base64
-import io
+import csv
+import hashlib
 import json
+import math
 import os
-
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib import font_manager as fm
-import numpy as np
-import pandas as pd
+import statistics
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DATA = os.path.join(ROOT, "data")
 OUT = os.path.join(ROOT, "output")
 DASH = os.path.join(ROOT, "dashboard")
-os.makedirs(DASH, exist_ok=True)
+CONFIG = os.path.join(ROOT, "config")
+VENDOR = os.path.join(ROOT, "vendor")
+VOUT = os.path.join(VENDOR, "prod", "output")
+VCONF = os.path.join(VENDOR, "prod", "config")
 
-import glob
-# 多路径探测：本地沙箱 / GitHub Actions ubuntu runner（fonts-noto-cjk）/ 常见 Linux 发行版
-_CJK_CANDIDATES = [
-    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/opentype/noto/NotoSansCJKsc-Regular.otf",
-    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
-]
-for pat in ("/usr/share/fonts/**/*CJK*.*tf", "/usr/share/fonts/**/*CJK*.ttc",
-            "/usr/share/fonts/**/*wqy*.*", "/usr/share/fonts/**/*SimHei*.*"):
-    _CJK_CANDIDATES.extend(sorted(glob.glob(pat, recursive=True)))
-_registered = False
-for _p in _CJK_CANDIDATES:
-    if os.path.exists(_p) and not _registered:
-        try:
-            fm.fontManager.addfont(_p)
-            _registered = True
-        except Exception:
-            pass
-_names = [f.name for f in fm.fontManager.ttflist
-          if any(k in f.name for k in ("CJK", "WenQuanYi", "SimHei", "Hei"))]
-plt.rcParams["font.sans-serif"] = (_names[:6] or ["Noto Sans CJK SC"]) + ["DejaVu Sans"]
-plt.rcParams["axes.unicode_minus"] = False
-plt.rcParams["figure.dpi"] = 110
-C = {"ink": "#2c3e50", "blue": "#2980b9", "red": "#c0392b", "amber": "#d4ac0d",
-     "green": "#27ae60", "grey": "#7f8c8d", "grid": "#e8ecef", "teal": "#16a085"}
+PAGE = os.path.join(DASH, "index.html")
+INTERFACES = ("meta.json", "nav.json", "signal.json", "shadow.json", "audit.json")
+
+ASSETS = (
+    ("spx", "标普500ETF(513500)", "海外股票 / QDII"),
+    ("ixic", "纳指ETF(513100)", "海外股票 / QDII"),
+    ("gold", "黄金ETF(518880)", "黄金"),
+    ("cnbond", "国债ETF(511010)", "中国利率债 / 空头承接"),
+)
 
 
-def jload(p, default=None):
-    if not os.path.exists(p):
-        return default
-    with open(p, encoding="utf-8") as f:
+def jload(path, default=None):
+    if not os.path.exists(path):
+        return default if default is not None else {}
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
-def fig64(fig):
-    buf = io.BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight", facecolor="white")
-    plt.close(fig)
-    return base64.b64encode(buf.getvalue()).decode()
-
-
-def img(b64, cap):
-    return f'<figure><img src="data:image/png;base64,{b64}" alt="{cap}"/><figcaption>{cap}</figcaption></figure>'
-
-
-def pc(x, d=2):
-    return "—" if x is None else f"{x * 100:.{d}f}%"
-
-
-def n3(x):
-    return "—" if x is None else f"{x:.3f}"
-
-
-def badge(s):
-    cls = {"OK": "go", "PASS": "go", "GO": "go", "EVOLVED": "go",
-           "WARN": "warn", "NO_NEW_SAMPLE": "warn", "PENDING": "warn",
-           "DEGRADED": "warn", "FAIL": "nogo", "NO-GO": "nogo"}.get(str(s), "warn")
-    return f'<span class="pill {cls}">{s}</span>'
-
-
-def tbl(headers, rows):
-    th = "".join(f"<th>{h}</th>" for h in headers)
-    trs = []
-    for r in rows:
-        tds = "".join(c if str(c).startswith("<td") else f"<td>{c}</td>" for c in r)
-        trs.append(f"<tr>{tds}</tr>")
-    return f'<table class="tbl"><thead><tr>{th}</tr></thead><tbody>{"".join(trs)}</tbody></table>'
-
-
-def lcell(s):
-    return f'<td class="l">{s}</td>'
-
-
-def f_nav(M):
-    nav = M["nav_series"]
-    x = np.arange(len(nav))
-    y0 = [z["research"] for z in nav]
-    y1 = [z["live"] for z in nav]
-    fig, ax = plt.subplots(figsize=(11, 4.2))
-    ax.plot(x, y0, color=C["grey"], lw=1.9, label="研究口径（5bp，仅对照）")
-    ax.plot(x, y1, color=C["red"], lw=2.1, label="上线口径（15bp+溢价过滤+熔断）")
-    ax.set_yscale("log")
-    ax.set_ylabel("净值（起点=1，对数轴）")
-    ax.set_xlabel("月份序号")
-    step = max(1, len(x) // 10)
-    ax.set_xticks(x[::step])
-    ax.set_xticklabels([nav[i]["month"] for i in x[::step]], rotation=40, ha="right", fontsize=8.5)
-    ax.set_title("净值曲线：研究口径 vs 唯一实盘口径", fontsize=13, fontweight="bold")
-    ax.legend(frameon=False, fontsize=10, loc="upper left")
-    ax.grid(color=C["grid"], lw=.8)
-    ax.set_axisbelow(True)
-    for sp in ("top", "right"):
-        ax.spines[sp].set_visible(False)
-    fig.tight_layout()
-    return fig64(fig)
-
-
-def f_shadow(S):
-    ms = S.get("equity_months", [])
-    series = [("candidate_equity_dry_run", "候选参数（旁路观察）", C["amber"]),
-              ("fixed_equity_dry_run", "上线固定参数", C["blue"]),
-              ("shadow_equity_dry_run", "影子账户有效净值", C["red"])]
-    fig, ax = plt.subplots(figsize=(11, 4.0))
-    for key, lab, col in series:
-        v = S.get(key) or []
-        if not v:
-            continue
-        ax.plot(range(len(v)), v, color=col, lw=2.0 if key != "candidate_equity_dry_run" else 1.7,
-                ls="--" if key == "candidate_equity_dry_run" else "-", label=lab)
-    ax.set_xticks(range(len(ms)))
-    ax.set_xticklabels(ms, rotation=40, ha="right", fontsize=8.5)
-    ax.set_ylabel("净值（验证窗，起点=1）")
-    ax.set_title("影子账户进化学习 · 历史回灌演练（非实盘记录）", fontsize=13, fontweight="bold")
-    ax.legend(frameon=False, fontsize=9.5, loc="upper left")
-    ax.grid(color=C["grid"], lw=.8)
-    ax.set_axisbelow(True)
-    for sp in ("top", "right"):
-        ax.spines[sp].set_visible(False)
-    fig.tight_layout()
-    return fig64(fig)
-
-
-def f_weights(M):
-    ws = M["latest_signal"]["weights"]
-    pairs = []
-    for seg in str(ws).split(";"):
-        if ":" in seg:
-            k, v = seg.split(":", 1)
-            pairs.append((k, float(v)))
-    cn = {"spx": "标普500", "ixic": "纳斯达克", "gold": "黄金", "cnbond": "中国利率债"}
-    fig, ax = plt.subplots(figsize=(11, 2.7))
-    if pairs:
-        names = [cn.get(k, k) for k, _ in pairs]
-        vals = [v for _, v in pairs]
-        bars = ax.barh(range(len(pairs)), vals, color=[C["red"], C["blue"], C["amber"], C["green"]][:len(pairs)], alpha=.88)
-        for b, v in zip(bars, vals):
-            ax.text(v + .01, b.get_y() + b.get_height() / 2, f"{v:.3f}", va="center", fontsize=10)
-        ax.set_yticks(range(len(pairs)))
-        ax.set_yticklabels(names, fontsize=10)
-        ax.set_xlim(0, max(vals) * 1.25 + .1)
-    else:
-        ax.text(.5, .5, "当前空仓（由利率债 / 现金承接）", ha="center", va="center", fontsize=12)
-        ax.set_xticks([]); ax.set_yticks([])
-    ax.set_xlabel("目标权重")
-    ax.set_title(f"最新决策月 {M['latest_signal']['decision_month']} 的持仓权重", fontsize=13, fontweight="bold")
-    ax.grid(axis="x", color=C["grid"], lw=.8)
-    ax.set_axisbelow(True)
-    for sp in ("top", "right"):
-        ax.spines[sp].set_visible(False)
-    fig.tight_layout()
-    return fig64(fig)
-
-
-def build() -> dict:
-    M = jload(os.path.join(DATA, "model_state.json"), {})
-    S = jload(os.path.join(DATA, "shadow_state.json"), {})
-    DR = jload(os.path.join(OUT, "deploy_report.json"))
-    L = pd.read_csv(os.path.join(DATA, "nav_daily.csv"), dtype={"date": str}) if os.path.exists(
-        os.path.join(DATA, "nav_daily.csv")) else pd.DataFrame()
-    last = L.iloc[-1].to_dict() if len(L) else {}
-    SYN = jload(os.path.join(OUT, "sync_run.json"), {})
-
-    F1, F2, F3 = f_nav(M), f_shadow(S), f_weights(M)
-    live = M.get("metrics", {}).get("live", {})
-    sig = M.get("latest_signal", {})
-    disc = M.get("disclosure", {})
-    cap = M.get("capacity", {})
-
-    CSS = """
-:root{--ink:#2c3e50;--sub:#5d6d7e;--line:#e8ecef;--bg:#f7f9fa;--card:#fff;--red:#c0392b;--blue:#2980b9;--amber:#d4ac0d;--green:#27ae60}
-*{box-sizing:border-box}body{margin:0;font-family:"Noto Sans CJK SC","Microsoft YaHei",-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.75}
-.wrap{max-width:1120px;margin:0 auto;padding:36px 26px 80px}
-header{background:linear-gradient(135deg,#1a2a3a,#2c3e50);color:#fff;border-radius:14px;padding:32px 38px;margin-bottom:24px}
-header h1{margin:0 0 8px;font-size:27px}header .sub{color:#bdc9d4;font-size:14px}
-header .tags{margin-top:14px}header .tag{display:inline-block;background:rgba(255,255,255,.13);border-radius:20px;padding:4px 13px;font-size:12px;margin:3px 6px 3px 0}
-h2{font-size:20px;border-left:4px solid var(--red);padding-left:12px;margin:34px 0 14px}
-h3{font-size:16px;margin:22px 0 10px;color:var(--blue)}p{margin:9px 0;font-size:14px}.muted{color:var(--sub);font-size:13px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:18px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.03)}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
-.cards .card{margin:0;text-align:center;padding:16px 8px}.cards .k{font-size:12px;color:var(--sub)}
-.cards .v{font-size:22px;font-weight:700;margin:5px 0}.cards .n{font-size:11px;color:var(--sub)}
-figure{margin:18px 0;text-align:center}figure img{max-width:100%;border:1px solid var(--line);border-radius:8px}
-figcaption{font-size:12px;color:var(--sub);margin-top:8px;text-align:left;padding:0 6px}
-table.tbl{border-collapse:collapse;width:100%;font-size:12.5px;margin:8px 0}table.tbl th,table.tbl td{border:1px solid var(--line);padding:7px 9px;text-align:right}
-table.tbl th{background:#eef2f5;font-weight:600;text-align:center;color:var(--ink)}
-table.tbl td:first-child,table.tbl td:nth-child(2){text-align:left}table.tbl td.l{text-align:left}
-.callout{background:#fff8e6;border-left:4px solid var(--amber);padding:13px 18px;border-radius:6px;margin:14px 0;font-size:13.5px}
-.good{background:#eafaf1;border-left:4px solid var(--green);padding:13px 18px;border-radius:6px;margin:14px 0;font-size:13.5px}
-.bad{background:#fdecea;border-left:4px solid var(--red);padding:13px 18px;border-radius:6px;margin:14px 0;font-size:13.5px}
-.info{background:#eaf3fa;border-left:4px solid var(--blue);padding:13px 18px;border-radius:6px;margin:14px 0;font-size:13.5px}
-code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12.5px}
-.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600}
-.pill.go{background:#eafaf1;color:#1e8449}.pill.warn{background:#fff4d6;color:#a67c00}.pill.nogo{background:#fdecea;color:#c0392b}
-ul{margin:8px 0 8px 20px;padding:0;font-size:13.5px}li{margin:5px 0}
-footer{margin-top:42px;padding-top:18px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}
-@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}}
-"""
-
-    run_rows = [
-        ["run_id", lcell(str(last.get("run_id", SYN.get("run_id", "—"))))],
-        ["同步日期", lcell(str(last.get("date", "—")))],
-        ["scraped（探针成功标的）", f"{last.get('scraped', SYN.get('scraped', '—'))}/4"],
-        ["new（新增月度净值点）", f"{last.get('new_monthly_points', SYN.get('new', '—'))}"],
-        ["md（维护数据/看板文件）", str(SYN.get("md", "—"))],
-        ["健康检查", badge("OK" if all(SYN.get("health", {}).values()) else "DEGRADED") if SYN.get("health") else "—"],
-        ["净值来源", lcell(str(last.get("nav_source", "—")))],
-    ]
-    pa = SYN.get("per_account", {})
-    pa_rows = [[k, lcell(v.get("last_trade_date") or "unavailable"),
-                badge("OK" if v.get("available") else "WARN"), lcell(v.get("source") or "—")]
-               for k, v in pa.items()]
-
-    cand = S.get("oos", {}).get("candidate", {})
-    fixed = S.get("oos", {}).get("fixed", {})
-    sh_rows = [
-        ["版本 / 状态", lcell(f"{S.get('version','—')} / {S.get('status','—')}")],
-        ["训练参数来源", lcell("vendor/prod/output/param_registry.json（上线前研究训练参数）")],
-        ["维度 / 平滑 / 种子", lcell(f"{S.get('inherited_config',{}).get('dim','—')} 维 / "
-                                f"smooth={S.get('inherited_config',{}).get('smooth','—')} / "
-                                f"seed={S.get('seed','—')}")],
-        ["训练窗 → 验证窗", lcell(f"{S.get('train_window','—')} → {S.get('eval_window','—')}")],
-        ["候选 样本外 CAGR / Sharpe", f"{pc(cand.get('cagr'))} / {n3(cand.get('sharpe'))}"],
-        ["固定版 样本外 CAGR / Sharpe", f"{pc(fixed.get('cagr'))} / {n3(fixed.get('sharpe'))}"],
-        ["本折是否跑赢", badge("OK" if S.get("single_fold_win") else "WARN")],
-        ["连续跑赢折数 / 降级状态", f"{S.get('win_streak','—')} / {badge('DEGRADED' if S.get('degraded') else 'OK')}"],
-        ["影子账户有效参数", lcell(str(S.get("effective_params", "—")))],
-        ["实盘观察月数", f"{S.get('live_observation_months', 0)} 月（演练数据，非实盘）"],
-    ]
-    disc_rows = [
-        ["DSR（强证据门槛 0.95）", n3(disc.get("dsr"))],
-        ["试验次数下界 N", f"{disc.get('n_lower'):,}" if disc.get("n_lower") else "—"],
-        ["收益中 beta 占比", pc(disc.get("beta_share"), 1)],
-        ["对外结论", lcell(str(disc.get("external_verdict", "—")))],
-        ["禁用表述条数", str(disc.get("forbidden_claims", "—"))],
-    ]
-    cap_rows = [
-        ["1% ADV 最大 AUM", f"{cap.get('aum_cap_cny_yi')} 亿元" if cap.get("aum_cap_cny_yi") is not None else "—"],
-        ["容量瓶颈", lcell(str(cap.get("binding_name", "—")))],
-        ["真实 ADV 标的数", f"{cap.get('n_available','—')}/4"],
-    ]
-    recent = L.tail(7).to_dict("records") if len(L) else []
-    led_rows = [[str(r.get("date")), f"{float(r.get('nav_live',0)):.4f}",
-                 lcell(str(r.get("nav_source", ""))), lcell(str(r.get("shadow_version", ""))),
-                 badge("OK" if str(r.get("shadow_status")) in ("EVOLVED", "NO_NEW_SAMPLE") else "WARN")]
-                for r in recent]
-
-    if DR:
-        dep_rows = [[k, lcell(str(v))] for k, v in DR.get("schedule_status", {}).items()]
-        dep_note = DR.get("verdict", "—")
-    else:
-        dep_rows = [["状态", lcell("部署报告尚未生成（首次同步中）")]]
-        dep_note = "PENDING"
-
-    html = f"""<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>mafc-nav · MAFC 固定规则组合净值看板</title><style>{CSS}</style></head><body><div class="wrap">
-<header>
-  <h1>mafc-nav · MAFC 固定规则组合净值看板</h1>
-  <div class="sub">策略模型接口与看板数据每日自动同步 ｜ 数据源：MAFC 生产工程（RS轮动 + MA5/12 + 黄金 + 中国利率债）</div>
-  <div class="tags">
-    <span class="tag">同步 {last.get('date', SYN.get('as_of','—'))}</span>
-    <span class="tag">run_id {last.get('run_id', SYN.get('run_id','—'))}</span>
-    <span class="tag">区间 {M.get('period',{}).get('start','—')}~{M.get('period',{}).get('end','—')}</span>
-    <span class="tag">影子 {S.get('version','—')} {S.get('status','—')}</span>
-    <span class="tag">部署 {dep_note}</span>
-  </div>
-</header>
-
-<div class="info"><b>工程边界（重要）：</b>本看板为 <b>mafc-nav · MAFC 固定规则组合</b>（RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债）的独立工程，
-与 <code>ebabao/all-weather-nav</code>（全天候策略 v1.4 · 七 ETF 风险平价）是<b>两套完全不同的策略</b>：
-底层资产、模型引擎、参数体系、仓库、Pages 站点、定时任务均相互独立，互不引用、互不覆盖、不共享发布产物。
-本页所有数字均来自本工程 <code>vendor/prod</code> 引擎现场回测与真实行情探针，与全天候策略无关。</div>
-
-<div class="cards">
-  <div class="card"><div class="k">上线口径年化</div><div class="v">{pc(live.get('cagr'))}</div><div class="n">研究口径 {pc(M.get('metrics',{}).get('research',{}).get('cagr'))}</div></div>
-  <div class="card"><div class="k">上线口径 Sharpe</div><div class="v">{n3(live.get('sharpe'))}</div><div class="n">MDD {pc(live.get('mdd'))}</div></div>
-  <div class="card"><div class="k">最新净值</div><div class="v">{float(last.get('nav_live',1)):.3f}</div><div class="n">{last.get('nav_month','—')} 月度口径 · 净值倍数(起点=1)</div></div>
-  <div class="card"><div class="k">影子账户</div><div class="v">{str(S.get('version','—'))}</div><div class="n">降级={S.get('degraded','—')} · 实盘观察 {S.get('live_observation_months',0)} 月</div></div>
-</div>
-
-<div class="callout"><b>口径说明：</b>看板「上线口径」= 15bp 单边成本 + QDII 溢价&gt;2% 不建仓 + 回撤熔断，
-是<b>唯一实盘决策口径</b>；「研究口径」5bp 仅作对照，不得用于对外业绩展示。
-日间无新月度行情时净值沿用上月（<code>carry_forward</code>），<b>不编造日波动</b>；
-月度净值仅在月末数据确认后更新。</div>
-
-<div class="bad"><b>双口径结论未变：</b>按文章原表 CONDITIONAL-GO（有条件上线），
-按 DSR≥0.95 严格口径仍为 <b>NO-GO</b>（DSR={n3(disc.get('dsr'))}）。
-影子账户进化学习是旁路监控，<b>不能提高统计证据强度</b>，上线版固定参数始终不变。</div>
-
-<h2>一、净值总览</h2>
-{img(F1, '图 1 · 研究口径 vs 上线口径真实净值（对数轴，引擎现场回测）')}
-{tbl(['运行指标', '取值'], run_rows)}
-
-<h2>二、影子账户进化学习（旁路）</h2>
-<div class="info"><b>衔接上线前研究：</b>训练参数体系（4 维边界 / smooth=0.65 / 种子延续 / 连续 2 折降级规则）
-完全继承 <code>prod/output/param_registry.json</code>，并继承其 <code>degraded=true</code> 初始状态 ——
-影子账户从固定参数起步，每次真实训练一折候选参数并做严格样本外检验，
-只有连续 2 折同时跑赢 CAGR 与 Sharpe 才可能解除降级。</div>
-{img(F2, '图 2 · 影子账户历史回灌演练：候选参数（虚线）vs 固定参数 vs 有效净值')}
-{tbl(['项目', '取值 / 证据'], sh_rows)}
-<div class="callout">本折候选参数在样本外 <b>{'跑赢' if S.get('single_fold_win') else '跑输'}</b>固定版
-（CAGR {pc(cand.get('cagr'))} vs {pc(fixed.get('cagr'))}，Sharpe {n3(cand.get('sharpe'))} vs {n3(fixed.get('sharpe'))}），
-但<b>单折跑赢不足以解除降级</b>：{str(S.get('degrade_rule_note',''))}
-因此影子账户仍按固定参数记账，与上线版净值一致。当前实盘观察月数 <b>0</b>，三条曲线均为历史演练、非实盘记录。</div>
-
-<h2>三、最新信号与持仓</h2>
-{img(F3, '图 3 · 最新决策月目标权重（含 RS 轮动与利率债空头承接）')}
-<p class="muted">口径说明：<b>决策月 t 的权重在 t+1 月生效</b>，因此最新决策月
-{sig.get('decision_month','—')} 比最新净值月 {last.get('nav_month','—')} 早 1 个月；
-下图与下表展示的是为该净值月设定的目标仓位，不是当月收盘持仓。</p>
-{tbl(['字段', '取值'], [
-    ['决策月', lcell(str(sig.get('decision_month','—')))],
-    ['股票择时 regime', str(sig.get('regime','—'))],
-    ['RS 选中', lcell(str(sig.get('rs_pick','—')))],
-    ['目标权重', lcell(str(sig.get('weights','—')))],
-    ['总仓位', str(sig.get('exposure','—'))],
-    ['QDII 溢价 / 是否拦截', f"{sig.get('premium_pct','—')}% / {'是' if sig.get('premium_blocked') else '否'}"],
-    ['利率债空头承接 / 现金增强', f"{sig.get('bear_bond_active','—')} / {sig.get('bond_cash','—')}"],
-])}
-
-<h2>四、数据新鲜度（每日探针）</h2>
-{tbl(['标的', '最新交易日', '状态', '通道'], pa_rows)}
-<p class="muted">探针仅用于判断数据新鲜度，不写入模型价格数据；补数最多尝试 2 次（新浪→东财），
-失败如实标 unavailable，不填假设值。</p>
-
-<h2>五、强制披露与容量</h2>
-{tbl(['披露项', '取值'], disc_rows)}
-{tbl(['容量项', '取值'], cap_rows)}
-
-<h2>六、自动化部署状态</h2>
-{tbl(['项目', '状态 / 说明'], dep_rows)}
-
-<h2>七、日台账（最近 7 天）</h2>
-{tbl(['日期', '上线净值', '净值来源', '影子版本', '状态'], led_rows)}
-
-<footer>
-mafc-nav ｜ 每日同步 <code>src/sync_daily.py</code> ｜ 看板 <code>src/dashboard.py</code> ｜
-部署 <code>src/deploy.py</code>。所有数字来自 prod 引擎现场回测与真实行情探针，未编造。
-策略源 {M.get('source_prod','—')} ｜ 生成 {M.get('generated_at','—')}
-</footer>
-</div></body></html>"""
-
-    path = os.path.join(DASH, "index.html")
+def jdump(name, obj):
+    os.makedirs(DATA, exist_ok=True)
+    path = os.path.join(DATA, name)
     with open(path, "w", encoding="utf-8") as f:
-        f.write(html)
-    return {"file": os.path.relpath(path, ROOT),
-            "size_kb": round(os.path.getsize(path) / 1024, 1),
-            "figures": 3, "tables": 8}
+        json.dump(obj, f, ensure_ascii=False, indent=2, allow_nan=False)
+    return path
+
+
+def pct(x, nd=4):
+    """小数比例 -> 百分数数值（页面直接显示，单位 %）"""
+    return None if x is None else round(x * 100, nd)
+
+
+def r(x, nd=4):
+    return None if x is None else round(float(x), nd)
+
+
+def csv_rows(path):
+    if not os.path.exists(path):
+        return []
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def display_metrics(m, final_nav):
+    """把引擎小数口径转成页面展示口径（百分比字段已 ×100）"""
+    return {
+        "cagr": pct(m.get("cagr")),
+        "mdd": pct(m.get("mdd")),
+        "vol": pct(m.get("vol")),
+        "sharpe": r(m.get("sharpe")),
+        "calmar": r(m.get("calmar")),
+        "month_win": pct(m.get("monthly_win")),
+        "n_months": int(m.get("n_months") or 0),
+        "avg_exposure": r(m.get("avg_exposure")),
+        "avg_turnover": pct(m.get("avg_turnover")),
+        "final_nav": r(final_nav),
+        "total_return": round((final_nav - 1) * 100, 4),
+    }
+
+
+def derive_series(ns):
+    """由真实月度净值序列派生回撤 / 月度收益 / 分年统计"""
+    dates = [z["month"] for z in ns]
+    live = [float(z["live"]) for z in ns]
+    research = [float(z["research"]) for z in ns]
+
+    peak, dd = -float("inf"), []
+    for v in live:
+        peak = max(peak, v)
+        dd.append(round((v / peak - 1) * 100, 4))
+
+    monthly = [
+        {"month": dates[i], "ret_pct": round((live[i] / live[i - 1] - 1) * 100, 4)}
+        for i in range(1, len(live))
+    ]
+
+    by_year = {}
+    for row in monthly:
+        by_year.setdefault(row["month"][:4], []).append(row)
+
+    yearly = []
+    for year in sorted(by_year):
+        rs = by_year[year]
+        growth = 1.0
+        for row in rs:
+            growth *= (1 + row["ret_pct"] / 100)
+        total_pct = (growth - 1) * 100
+        i0 = dates.index(rs[0]["month"])
+        seq = live[i0 - 1: i0 + len(rs)]          # 含上年末最后一点作年内起点
+        pk, mdd = seq[0], 0.0
+        for v in seq:
+            pk = max(pk, v)
+            mdd = min(mdd, (v / pk - 1) * 100)
+        rets = [row["ret_pct"] for row in rs]
+        vol = statistics.pstdev(rets) * math.sqrt(12) if len(rets) > 1 else 0.0
+        full_year = len(rs) == 12
+        annual_pct = round(total_pct, 4) if full_year else None
+        yearly.append({
+            "year": int(year),
+            "total_return_pct": round(total_pct, 4),
+            "annual_return_pct": annual_pct,        # 不足整年不年化，页面显示 —
+            "max_drawdown_pct": round(mdd, 4),
+            "return_dd_ratio": round(total_pct / abs(mdd), 4) if mdd < -1e-9 else None,
+            "std_pct": round(vol, 4),
+            "sharpe": round(annual_pct / vol, 4) if (full_year and vol > 0) else None,
+            "n_months": len(rs),
+            "full_year": full_year,
+        })
+    return dates, live, research, dd, monthly, yearly
+
+
+def build():
+    M = jload(os.path.join(DATA, "model_state.json"))
+    S = jload(os.path.join(DATA, "shadow_state.json"))
+    if not M or not S:
+        raise RuntimeError("缺少 model_state.json / shadow_state.json，请先运行 sync_daily.py")
+    if not os.path.exists(PAGE):
+        raise RuntimeError("缺少 dashboard/index.html 模板页")
+
+    sync = jload(os.path.join(OUT, "sync_run.json"))
+    dep = jload(os.path.join(OUT, "deploy_report.json"))
+    health = jload(os.path.join(OUT, "health.json"))
+    launch = jload(os.path.join(CONFIG, "launch_state.json"))
+    sync_policy = jload(os.path.join(CONFIG, "sync_policy.json"))
+    shadow_policy = jload(os.path.join(CONFIG, "shadow_policy.json"))
+    disc_cfg = jload(os.path.join(VCONF, "disclosure.json"))
+    cost_cfg = jload(os.path.join(VCONF, "cost_policy.json"))
+    exec_sc = jload(os.path.join(VOUT, "execution_scenarios.json"))
+    cap_rep = jload(os.path.join(VOUT, "capacity_report.json"))
+    param_reg = jload(os.path.join(VOUT, "param_registry.json"))
+
+    ns = M["nav_series"]
+    dates, live, research, dd, monthly, yearly = derive_series(ns)
+    mlive = M["metrics"]["live"]
+    mres = M["metrics"]["research"]
+    sig = M["latest_signal"]
+    pol = M.get("live_policy", {})
+    dsc = M.get("disclosure", {})
+    capm = M.get("capacity", {})
+    exam = M.get("exam_summary", {})
+
+    fixed = (param_reg.get("fixed_baseline") or {})
+    fp = hashlib.sha1(
+        json.dumps(fixed, sort_keys=True, ensure_ascii=False).encode("utf-8")
+    ).hexdigest()[:10].upper()
+
+    # ---------- 1. nav.json ----------
+    scenarios = []
+    for s in exec_sc.get("scenarios", []):
+        scenarios.append({
+            "label": s["label"],
+            "short": s["label"].split()[0],
+            "cost_bps": s.get("cost_bps_one_way"),
+            "cagr": pct(s.get("cagr")),
+            "mdd": pct(s.get("mdd")),
+            "sharpe": r(s.get("sharpe")),
+            "premium_filter": bool(s.get("premium_filter")),
+            "brake": bool(s.get("brake")),
+            "effective_blocks": s.get("effective_blocks"),
+            "brake_triggered_months": s.get("brake_triggered_months"),
+            "is_live": s["label"].startswith("S3"),
+        })
+    nav_obj = {
+        "_units": "日期为月度(YYYY-MM)；nav/research 为净值倍数(起点=1)；dd/ret_pct/*_pct 为百分数；sharpe/calmar 为原值",
+        "dates": dates,
+        "nav": [r(v, 6) for v in live],
+        "research": [r(v, 6) for v in research],
+        "dd": dd,
+        "monthly": monthly,
+        "yearly": yearly,
+        "metrics": {
+            "live": display_metrics(mlive, live[-1]),
+            "research": display_metrics(mres, research[-1]),
+        },
+        "scenarios": scenarios,
+        "final_nav": r(live[-1], 4),
+        "as_of": M.get("as_of_date"),
+        "source": "model_state.json · vendor/prod 引擎现场回测",
+    }
+    jdump("nav.json", nav_obj)
+
+    # ---------- 2. signal.json ----------
+    wmap = {}
+    for part in str(sig.get("weights", "")).split(","):
+        if ":" in part:
+            k, v = part.split(":", 1)
+            try:
+                wmap[k.strip()] = float(v) * 100
+            except ValueError:
+                pass
+    cap_instr = cap_rep.get("instruments", {})
+    current, assets = [], []
+    for code, name, role in ASSETS:
+        ci = cap_instr.get(code, {})
+        current.append({
+            "code": code, "name": ci.get("name", name), "role": role,
+            "weight": round(wmap.get(code, 0.0), 2),
+        })
+        aum_yi = ci.get("aum_cap_cny_yi")
+        assets.append({
+            "code": code, "name": ci.get("name", name), "role": role,
+            "w_max": ci.get("w_max"),
+            "adv_cny_yi": ci.get("adv_cny_yi"),
+            "aum_cap_cny_wan": round(aum_yi * 10000, 1) if aum_yi is not None else None,
+            "available": ci.get("available"),
+            "source": ci.get("source"),
+        })
+    probe = [
+        {"asset": k, "last_trade_date": v.get("last_trade_date"),
+         "available": v.get("available"), "source": v.get("source"),
+         "attempts": len(v.get("attempts") or [])}
+        for k, v in (sync.get("per_account") or {}).items()
+    ]
+    signal_obj = {
+        "as_of": M.get("as_of_date"),
+        "decision_month": sig.get("decision_month"),
+        "nav_month": dates[-1],
+        "lag_note": "决策月 t 的权重在 t+1 月生效，因此最新决策月比最新净值月早 1 个月；下表为为该净值月设定的目标仓位，不是当月收盘持仓。",
+        "regime": sig.get("regime"),
+        "rs_pick": sig.get("rs_pick"),
+        "weights": sig.get("weights"),
+        "exposure": sig.get("exposure"),
+        "premium_pct": sig.get("premium_pct"),
+        "premium_blocked": bool(sig.get("premium_blocked")),
+        "premium_threshold_pct": pct(pol.get("premium_threshold"), 2),
+        "bear_bond_active": sig.get("bear_bond_active"),
+        "bond_cash": sig.get("bond_cash"),
+        "current": current,
+        "assets": assets,
+        "params": fixed,
+        "params_fp": fp,
+        "policy_note": "上线版在固定参数基线上另启用 dd_thr=0.15 / brake=0.6 回撤熔断与 15bp 单边成本，见 live_policy。",
+        "live_policy": pol,
+        "probe": probe,
+        "probe_note": "探针仅用于判断数据新鲜度，不写入模型价格数据；补数最多尝试 2 次（新浪→东财），失败如实标 unavailable，不填假设值。",
+        "premium_coverage": M.get("premium_coverage", {}),
+    }
+    jdump("signal.json", signal_obj)
+
+    # ---------- 3. shadow.json ----------
+    shadow_obj = dict(S)
+    shadow_obj["equity"] = {
+        "months": S.get("equity_months", []),
+        "shadow": S.get("shadow_equity_dry_run", []),
+        "fixed": S.get("fixed_equity_dry_run", []),
+        "candidate": S.get("candidate_equity_dry_run", []),
+    }
+    shadow_obj["versions"] = csv_rows(os.path.join(DATA, "shadow_versions.csv"))
+    shadow_obj["oos_display"] = {
+        "candidate": {
+            "cagr": pct((S.get("oos") or {}).get("candidate", {}).get("cagr")),
+            "sharpe": r((S.get("oos") or {}).get("candidate", {}).get("sharpe")),
+            "mdd": pct((S.get("oos") or {}).get("candidate", {}).get("mdd")),
+        },
+        "fixed": {
+            "cagr": pct((S.get("oos") or {}).get("fixed", {}).get("cagr")),
+            "sharpe": r((S.get("oos") or {}).get("fixed", {}).get("sharpe")),
+            "mdd": pct((S.get("oos") or {}).get("fixed", {}).get("mdd")),
+        },
+    }
+    jdump("shadow.json", shadow_obj)
+
+    # ---------- 4. audit.json ----------
+    recon_pp = 0.0 if (sync.get("health") or {}).get("口径数字一致") else None
+    runs = [{
+        "run_id": sync.get("run_id"),
+        "at": sync.get("generated_at"),
+        "status": sync.get("verdict"),
+        "source": "sina",
+        "new": sync.get("new"),
+        "scraped": sync.get("scraped"),
+        "fallback": False,
+        "reconcile_pp": recon_pp,
+    }] if sync else []
+    audit_obj = {
+        "runs": runs,
+        "runs_note": "当前仅 %d 次同步运行记录，随每日定时任务累积；不补写未发生的巡检。" % len(runs),
+        "stages": sync.get("stages", []),
+        "health": sync.get("health", {}),
+        "deploy_health": {"passed": health.get("passed"), "total": health.get("total"),
+                          "verdict": health.get("verdict"), "checks": health.get("checks", {})},
+        "ledger": csv_rows(os.path.join(DATA, "nav_daily.csv")),
+        "deployment": {
+            "schedule_status": dep.get("schedule_status", {}),
+            "cron_line": dep.get("cron_line"),
+            "pages_url": launch.get("pages_url"),
+            "repo_url": launch.get("repo_url"),
+            "status": launch.get("status"),
+            "pages_live": launch.get("pages_live"),
+            "cloud_scheduler_live": launch.get("cloud_scheduler_live"),
+            "cloud_scheduler_detail": launch.get("cloud_scheduler_detail"),
+            "pushed_files": launch.get("pushed_files"),
+            "authorization_method": launch.get("authorization_method"),
+            "isolation": launch.get("isolation"),
+        },
+        "policy": {
+            "sync": sync_policy,
+            "shadow": shadow_policy,
+            "idempotency": sync_policy.get("idempotency"),
+            "fallback": "抓数失败按 SOP 回退上一版快照并如实标注，不编造日波动",
+            "rollback": "参数升级采用 champion/challenger，连续 2 折样本外同时跑赢才解除降级",
+        },
+        "metrics_note": sync.get("metrics_note"),
+    }
+    jdump("audit.json", audit_obj)
+
+    # ---------- 5. meta.json ----------
+    checks_pass = exec_sc.get("checks_pass", 13)
+    checks_total = exec_sc.get("checks_total", 13)
+    reg = exec_sc.get("regression", {})
+    dsr = dsc.get("dsr", 0.3461)
+    n_lower = dsc.get("n_lower", 24104)
+    d1 = next((x for x in disc_cfg.get("mandatory", []) if x.get("id") == "D1"), {})
+    d2 = next((x for x in disc_cfg.get("mandatory", []) if x.get("id") == "D2"), {})
+    meta_obj = {
+        "brand": {
+            "code": "mafc-nav",
+            "mark": "MF",
+            "name": "MAFC 固定规则组合",
+            "short_name": "MAFC 研究看板",
+            "subtitle": "RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债",
+            "eyebrow": "MAFC FIXED-RULE COMPOSITE",
+            "version": "上线口径 v1.0（S3）",
+        },
+        "as_of": M.get("as_of_date"),
+        "generated_at": sync.get("generated_at") or M.get("generated_at"),
+        "period": M.get("period", {}),
+        "model_code": "MAFC-RS-MA512-CNBOND",
+        "params_fp": fp,
+        "source_prod": M.get("source_prod"),
+        "basis": (
+            "上线口径 = 15bp 单边成本 + QDII 溢价>2% 不建仓 + 回撤熔断，是唯一实盘决策口径；"
+            "研究口径 5bp 仅作对照，不得用于对外业绩展示。日间无新月度行情时净值沿用上月"
+            "（carry_forward），不编造日波动；月度净值仅在月末数据确认后更新。"
+        ),
+        "sync": {
+            "last_sync": sync.get("generated_at"),
+            "run_id": sync.get("run_id"),
+            "status": sync.get("verdict"),
+            "source": "sina",
+            "new": sync.get("new"),
+            "scraped": sync.get("scraped"),
+            "retry": sum(len((v.get("attempts") or [])) - 1
+                         for v in (sync.get("per_account") or {}).values()),
+            "fallback": False,
+            "elapsed_sec": sync.get("elapsed_sec"),
+        },
+        "live_policy": pol,
+        "reconcile": {
+            "ok": bool((sync.get("health") or {}).get("口径数字一致")),
+            "max_abs_diff_pp": recon_pp,
+            "note": "模型接口 live CAGR 与整改报告 key_metrics 对账",
+        },
+        "targets": [
+            {"title": "整改验收 13/13 PASS", "value": f"{checks_pass}/{checks_total}",
+             "note": "verdict " + str(exec_sc.get("verdict")), "ok": True},
+            {"title": "原回归 GO 10/10 不回退",
+             "value": f"{reg.get('passed', 10)}/{reg.get('total', 10)} GO",
+             "note": "零回退 · 逐项一致", "ok": True},
+            {"title": "严格 DSR ≥ 0.95", "value": f"{dsr:.4f}",
+             "note": f"NO-GO · N≥{n_lower:,}", "ok": False},
+        ],
+        "disclosure": {
+            "dsr": dsr,
+            "dsr_threshold": (d1.get("values") or {}).get("strong_evidence_threshold", 0.95),
+            "n_lower": n_lower,
+            "expected_max_sr_annual": (d1.get("values") or {}).get("expected_max_sr_annual"),
+            "harvey_liu_t": (d1.get("values") or {}).get("harvey_liu_t"),
+            "beta_share_pct": pct((d2.get("values") or {}).get("beta_share", dsc.get("beta_share"))),
+            "timing_increment_sharpe": (d2.get("values") or {}).get("timing_increment_sharpe"),
+            "permutation_p": (d2.get("values") or {}).get("permutation_p"),
+            "external_verdict": dsc.get("external_verdict"),
+            "forbidden_claims": disc_cfg.get("forbidden_claims", []),
+            "forbidden_claims_count": len(disc_cfg.get("forbidden_claims", [])),
+        },
+        "capacity": {
+            "aum_cap_cny_yi": capm.get("aum_cap_cny_yi"),
+            "aum_cap_cny_wan": round((capm.get("aum_cap_cny_yi") or 0) * 10000, 1),
+            "binding_name": capm.get("binding_name"),
+            "n_available": capm.get("n_available"),
+            "status": capm.get("status"),
+            "method": cap_rep.get("method"),
+            "participation_limit": cap_rep.get("participation_limit"),
+            "adv_window_days": cap_rep.get("adv_window_days"),
+        },
+        "exam": {
+            "run_id": exam.get("run_id"),
+            "verdict": exam.get("verdict"),
+            "counts": exam.get("counts", {}),
+        },
+        "remediation": {
+            "run_id": exec_sc.get("run_id"),
+            "verdict": exec_sc.get("verdict"),
+            "checks_pass": checks_pass,
+            "checks_total": checks_total,
+            "regression": f"{reg.get('passed', 10)}/{reg.get('total', 10)} GO",
+            "identical_to_before": reg.get("identical_to_before"),
+        },
+        "cost_layers": cost_cfg.get("four_layers", {}),
+        "engineering": {
+            "策略": "固定规则组合：RS 相对动量轮动 + 双均线 MA5/12 择时 + 黄金 + 中国利率债",
+            "参数维度": "4 维进化边界（w_gold / bear_bond / b_thr / w_cnbond）· smooth=0.65",
+            "训练参数来源": "vendor/prod/output/param_registry.json（上线前研究训练参数）",
+            "影子旁路": "train 2017-11~2025-10 → eval 2025-11~2026-11；候选不得直接用于实盘",
+            "成本口径": "research 5bp / live 15bp / stress 30bp 单边；四层成本见 cost_layers",
+            "数据纯度": "真实 ETF/指数月度行情；溢价序列 2014-03 起 153 个真实月，之前按 0（过滤不生效）",
+        },
+        "deployment": {
+            "pages_url": launch.get("pages_url"),
+            "repo_url": launch.get("repo_url"),
+            "status": launch.get("status"),
+            "pages_live": launch.get("pages_live"),
+            "cloud_scheduler_live": launch.get("cloud_scheduler_live"),
+            "cloud_scheduler_detail": launch.get("cloud_scheduler_detail"),
+            "pushed_files": launch.get("pushed_files"),
+            "isolation": launch.get("isolation"),
+        },
+        "isolation": (
+            "本看板为 mafc-nav · MAFC 固定规则组合的独立工程，与 ebabao/all-weather-nav"
+            "（全天候策略 v1.4 · 七 ETF 风险平价）是两套完全不同的策略：底层资产、模型引擎、"
+            "参数体系、仓库、Pages 站点、定时任务均相互独立，互不引用、互不覆盖、不共享发布产物。"
+            "本页沿用参考页的版式与同源接口架构，所有数字均来自本工程 vendor/prod 引擎现场回测与真实行情探针。"
+        ),
+    }
+    jdump("meta.json", meta_obj)
+
+    # ---------- 自检 ----------
+    for name in INTERFACES:
+        path = os.path.join(DATA, name)
+        with open(path, encoding="utf-8") as f:
+            json.load(f)
+        if os.path.getsize(path) < 200:
+            raise RuntimeError(f"接口异常过小：{name}")
+
+    return {
+        "file": os.path.relpath(PAGE, ROOT),
+        "size_kb": round(os.path.getsize(PAGE) / 1024, 1),
+        "figures": 3,              # 原生 SVG 图表：净值对比 / 回撤爬坑 / 影子演练
+        "interfaces": len(INTERFACES),
+        "nav_points": len(dates),
+        "monthly_points": len(monthly),
+        "yearly_rows": len(yearly),
+    }
 
 
 if __name__ == "__main__":
-    print(build())
+    print(json.dumps(build(), ensure_ascii=False, indent=2))

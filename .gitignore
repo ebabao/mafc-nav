@@ -3,4 +3,5 @@ __pycache__/
 *.tmp
 output/backup_index.html
 site/
+preview_*.png
 .DS_Store

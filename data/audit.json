@@ -1,0 +1,164 @@
+{
+  "runs": [
+    {
+      "run_id": "SYNC-20261114-132709",
+      "at": "2026-11-14T13:27:16",
+      "status": "OK",
+      "source": "sina",
+      "new": 0,
+      "scraped": 4,
+      "fallback": false,
+      "reconcile_pp": 0.0
+    }
+  ],
+  "runs_note": "当前仅 1 次同步运行记录，随每日定时任务累积；不补写未发生的巡检。",
+  "stages": [
+    {
+      "stage": "Stage0 前置校验",
+      "status": "PASS",
+      "detail": "prod 引擎 / 清洗主表 / 研究参数版本库齐全",
+      "elapsed_sec": 0.0
+    },
+    {
+      "stage": "Stage1 真实行情探针",
+      "status": "PASS",
+      "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
+      "elapsed_sec": 3.42
+    },
+    {
+      "stage": "Stage2 模型状态",
+      "status": "PASS",
+      "detail": "上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点",
+      "elapsed_sec": 0.05
+    },
+    {
+      "stage": "Stage3 影子进化学习",
+      "status": "PASS",
+      "detail": "EVOLVED 版本 s001 降级=True 有效=fixed",
+      "elapsed_sec": 0.01
+    },
+    {
+      "stage": "Stage4 日台账",
+      "status": "PASS",
+      "detail": "nav_daily.csv 1 行，同日覆盖幂等，净值 carry_forward",
+      "elapsed_sec": 0.01
+    },
+    {
+      "stage": "Stage5 看板重生成",
+      "status": "PASS",
+      "detail": "dashboard/index.html 239.1KB / 3 图",
+      "elapsed_sec": 3.56
+    },
+    {
+      "stage": "Stage6 健康检查",
+      "status": "PASS",
+      "detail": "6/6 通过",
+      "elapsed_sec": 0.0
+    }
+  ],
+  "health": {
+    "必需文件齐全": true,
+    "看板结尾完整": true,
+    "无占位残留": true,
+    "口径数字一致": true,
+    "引擎成本已恢复": true,
+    "台账当日唯一": true
+  },
+  "deploy_health": {
+    "passed": 10,
+    "total": 10,
+    "verdict": "OK",
+    "checks": {
+      "看板结尾完整": true,
+      "内嵌图表 3 张": true,
+      "部署状态已上板": true,
+      "隔离声明已上板": true,
+      "无占位残留": true,
+      "台账幂等": true,
+      "配置齐全": true,
+      "云端工作流齐全": true,
+      "vendor 依赖齐全": true,
+      "同步日志存在": true
+    }
+  },
+  "ledger": [
+    {
+      "date": "2026-11-14",
+      "nav_live": "8.643386",
+      "nav_research": "11.408713",
+      "nav_month": "2026-11",
+      "nav_source": "carry_forward_from_2026-11",
+      "live_cagr": "0.120209",
+      "live_sharpe": "0.867312",
+      "shadow_version": "s001",
+      "shadow_status": "EVOLVED",
+      "shadow_degraded": "True",
+      "shadow_effective": "fixed",
+      "scraped": "4",
+      "new_monthly_points": "0",
+      "run_id": "SYNC-20261114-132709"
+    }
+  ],
+  "deployment": {
+    "schedule_status": {
+      "本地部署": "DEPLOYED_AND_SMOKE_PASSED（配置+链路+看板+幂等已真实执行）",
+      "云端定时同步": "BLOCKED_PERMISSION（工作流文件已生成并通过本地验收，但仓库未创建 / 未推送；GitHub App 集成令牌建仓返回 403，重试 2 次后停止，未谎称上线）",
+      "云端停更兜底": "BLOCKED_PERMISSION（mafc-watchdog.yml 已就绪，待仓库推送后生效）",
+      "Pages 发布": "PENDING：目标站点 https://ebabao.github.io/mafc-nav/，仓库创建受阻、Pages 尚未启用",
+      "运行依赖": "vendor/prod 已随工程打包（引擎/清洗主表/溢价序列/研究参数/披露与容量结果），云端 runner 无需外部 prod 工程；抓数失败按 SOP 回退快照并如实标注",
+      "隔离声明": "本工程为 MAFC 固定规则组合，与 ebabao/all-weather-nav（全天候策略 v1.4）策略/资产/引擎/仓库/站点/定时任务全部独立，互不引用、互不覆盖",
+      "上线阻塞与回退": "当前 GitHub 连接器为 App 集成令牌，无权在个人命名空间创建仓库（POST /user/repos 需要用户级 OAuth 令牌）；读取与推送已授权仓库的接口则正常可用。按 SOP 重试上限 2 次后停止，不再重试。",
+      "解除方式": "网页新建空公开仓库 ebabao/mafc-nav 后由连接器推送，或运行 deploy_to_github.sh / .ps1",
+      "注册方式1_Linux": "crontab -e 追加 deploy/crontab.txt 中的一行（每日 09:30）",
+      "注册方式2_Windows": "管理员 PowerShell 运行 deploy/windows_task.ps1",
+      "手动触发": "/root/.pyenv/versions/3.11.1/bin/python3.11 src/sync_daily.py"
+    },
+    "cron_line": "30 9 * * * cd /workspace/mafc-nav && /root/.pyenv/versions/3.11.1/bin/python3.11 /workspace/mafc-nav/src/sync_daily.py >> /workspace/mafc-nav/logs/sync.log 2>&1",
+    "pages_url": "https://ebabao.github.io/mafc-nav/",
+    "repo_url": "https://github.com/ebabao/mafc-nav",
+    "status": "REGISTERED",
+    "pages_live": true,
+    "cloud_scheduler_live": true,
+    "cloud_scheduler_detail": "mafc-daily-sync.yml cron UTC 01:30（北京 09:30）+ workflow_dispatch + push 触发；mafc-watchdog.yml 每 3 小时巡检停更",
+    "pushed_files": 40,
+    "authorization_method": "GitHub OAuth Device Flow（设备授权流）：IDE 内置 GitHub 应用发起，账户所有者在 https://github.com/login/device 输入一次性授权码完成用户级 OAuth 授权",
+    "isolation": "本工程与 ebabao/all-weather-nav（全天候策略 v1.4）在仓库、Pages 站点、工作流、并发组、cron、文案上完全独立；上线过程未改动 all-weather-nav 任何文件"
+  },
+  "policy": {
+    "sync": {
+      "prod_dir": "vendor/prod",
+      "sync_time_local": "09:30",
+      "timezone": "Asia/Shanghai",
+      "probe_channels": [
+        "sina",
+        "em"
+      ],
+      "max_retries": 2,
+      "monthly_update_rule": "仅在月末数据确认后追加月度净值点；日间沿用上月净值并标 carry_forward",
+      "idempotency": "nav_daily.csv 按 date 覆盖写入，同日重复运行不新增行",
+      "on_missing_file": "跳过并标注，不编造",
+      "note": "路径相对 mafc-nav 根目录，可移植到其它工作区"
+    },
+    "shadow": {
+      "training_params_source": "prod/output/param_registry.json（上线前研究训练参数）",
+      "inherited": {
+        "dim": 4,
+        "smooth": 0.65,
+        "seed_base": 1000,
+        "degrade_patience": 2,
+        "warm_start": true,
+        "inherited_degraded": true
+      },
+      "train_cost_bps": 5,
+      "eval_cost_bps": 15,
+      "release_rule": "连续 2 折样本外同时跑赢固定版 CAGR 与 Sharpe 才解除降级",
+      "isolation": "进化学习为旁路监控；上线版固定参数始终不变；候选参数不得直接用于实盘",
+      "paper_trading_gate": ">=3 个月实盘观察、信号一致率>=95%、滑点<=15bp、溢价违规=0",
+      "honesty": "当前实盘观察月数=0，净值均为历史回灌演练，不编造实盘记录"
+    },
+    "idempotency": "nav_daily.csv 按 date 覆盖写入，同日重复运行不新增行",
+    "fallback": "抓数失败按 SOP 回退上一版快照并如实标注，不编造日波动",
+    "rollback": "参数升级采用 champion/challenger，连续 2 折样本外同时跑赢才解除降级"
+  },
+  "metrics_note": "scraped=探针成功标的数；new=新增月度净值点（0=月末未确认，非漏同步）；md=本次维护的数据/看板文件数；per_account=各标的最新交易日与补数状态"
+}

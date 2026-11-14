@@ -1,0 +1,225 @@
+{
+  "_vendored_note": "运行最小子集：从源工程 prod/output/remediation_results.json 原样提取 execution.scenarios / checks / regression / verdict，供看板同源接口使用；数值未改动、未编造",
+  "source_file": "prod/output/remediation_results.json",
+  "run_id": "REM-20261114-104944",
+  "generated_at": "2026-11-14T10:49:46",
+  "engine_cost_restored": true,
+  "main_period": "2007-11~2026-11",
+  "sub_period": "2014-03~2026-11",
+  "premium_threshold": 0.02,
+  "brake": {
+    "dd_thr": 0.15,
+    "brake": 0.6,
+    "note": "条件触发的熔断（非体检瀑布中证伪的常态机械降仓）"
+  },
+  "scenarios": [
+    {
+      "label": "S0 研究基线（5bp / 无过滤 / 无熔断）",
+      "cost_bps_one_way": 5,
+      "premium_filter": false,
+      "brake": false,
+      "dd_thr": null,
+      "period": "2007-11~2026-11",
+      "n_months": 228.0,
+      "final_equity": 11408713.38205,
+      "cagr": 0.136695,
+      "vol": 0.138996,
+      "sharpe": 0.852529,
+      "mdd": -0.181793,
+      "calmar": 0.751927,
+      "monthly_win": 0.684211,
+      "avg_exposure": 1.092576,
+      "avg_turnover": 0.281098,
+      "brake_triggered_months": 0,
+      "premium_blocked_months": null,
+      "effective_blocks": null
+    },
+    {
+      "label": "S1 实盘口径（15bp）",
+      "cost_bps_one_way": 15,
+      "premium_filter": false,
+      "brake": false,
+      "dd_thr": null,
+      "period": "2007-11~2026-11",
+      "n_months": 228.0,
+      "final_equity": 10706685.722909,
+      "cagr": 0.132902,
+      "vol": 0.138921,
+      "sharpe": 0.828597,
+      "mdd": -0.181793,
+      "calmar": 0.731061,
+      "monthly_win": 0.671053,
+      "avg_exposure": 1.092576,
+      "avg_turnover": 0.281098,
+      "brake_triggered_months": 0,
+      "premium_blocked_months": null,
+      "effective_blocks": null
+    },
+    {
+      "label": "S2 + QDII溢价>2%不建仓",
+      "cost_bps_one_way": 15,
+      "premium_filter": true,
+      "brake": false,
+      "dd_thr": null,
+      "period": "2007-11~2026-11",
+      "n_months": 228.0,
+      "final_equity": 8880383.736135,
+      "cagr": 0.121805,
+      "vol": 0.116556,
+      "sharpe": 0.878135,
+      "mdd": -0.17783,
+      "calmar": 0.684954,
+      "monthly_win": 0.684211,
+      "avg_exposure": 1.065502,
+      "avg_turnover": 0.447286,
+      "brake_triggered_months": 0,
+      "premium_blocked_months": 53,
+      "effective_blocks": 42
+    },
+    {
+      "label": "S3 上线版（+回撤熔断15%）",
+      "cost_bps_one_way": 15,
+      "premium_filter": true,
+      "brake": true,
+      "dd_thr": 0.15,
+      "period": "2007-11~2026-11",
+      "n_months": 228.0,
+      "final_equity": 8643386.349273,
+      "cagr": 0.120209,
+      "vol": 0.116322,
+      "sharpe": 0.867312,
+      "mdd": -0.17783,
+      "calmar": 0.675979,
+      "monthly_win": 0.688596,
+      "avg_exposure": 1.033013,
+      "avg_turnover": 0.431516,
+      "brake_triggered_months": 19,
+      "premium_blocked_months": 53,
+      "effective_blocks": 42
+    },
+    {
+      "label": "S4 压力口径（30bp 全约束）",
+      "cost_bps_one_way": 30,
+      "premium_filter": true,
+      "brake": true,
+      "dd_thr": 0.15,
+      "period": "2007-11~2026-11",
+      "n_months": 228.0,
+      "final_equity": 7181347.076041,
+      "cagr": 0.109337,
+      "vol": 0.115291,
+      "sharpe": 0.788756,
+      "mdd": -0.189294,
+      "calmar": 0.577605,
+      "monthly_win": 0.644737,
+      "avg_exposure": 1.017817,
+      "avg_turnover": 0.424878,
+      "brake_triggered_months": 28,
+      "premium_blocked_months": 53,
+      "effective_blocks": 42
+    }
+  ],
+  "checks": [
+    {
+      "id": "R1",
+      "name": "体检前置证据完整",
+      "pass": true,
+      "hard": true,
+      "detail": "十关齐全，体检结论 CONDITIONAL-GO（有条件上线），黄灯 [2, 3, 8, 9]"
+    },
+    {
+      "id": "R2",
+      "name": "历史口径逐位复现（零侵入）",
+      "pass": true,
+      "hard": true,
+      "detail": "S0 CAGR 13.67%/MDD -18.18% vs 体检 13.67%/-18.18%"
+    },
+    {
+      "id": "R3",
+      "name": "引擎成本常量已恢复",
+      "pass": true,
+      "hard": true,
+      "detail": "E.COST 每次调用后均恢复 0.0005，未静默改写历史"
+    },
+    {
+      "id": "R4",
+      "name": "live 15bp 与体检瀑布一致",
+      "pass": true,
+      "hard": true,
+      "detail": "S1 13.29% vs 体检瀑布④ 13.29%"
+    },
+    {
+      "id": "R5",
+      "name": "QDII 溢价硬过滤生效",
+      "pass": true,
+      "hard": true,
+      "detail": "有效拦截 42 个月（溢价>2%），CAGR 13.29%→12.18%"
+    },
+    {
+      "id": "R6",
+      "name": "过滤后风险调整未劣化（覆盖期）",
+      "pass": true,
+      "hard": false,
+      "detail": "2014-03后 Sharpe 0.935→1.036，MDD -18.18%→-17.48%"
+    },
+    {
+      "id": "R7",
+      "name": "回撤熔断已启用",
+      "pass": true,
+      "hard": true,
+      "detail": "dd_thr=0.15，历史触发 19 个月，CAGR 代价仅 -0.16pp"
+    },
+    {
+      "id": "R8",
+      "name": "压力口径仍为正收益",
+      "pass": true,
+      "hard": true,
+      "detail": "30bp 全约束 CAGR 10.93% / MDD -18.93%"
+    },
+    {
+      "id": "R9",
+      "name": "容量已补真实 ADV",
+      "pass": true,
+      "hard": true,
+      "detail": "4/4 标的真实成交额；瓶颈=标普500ETF(513500)，1%ADV 上限 0.0335 亿元"
+    },
+    {
+      "id": "R10",
+      "name": "披露强制项齐全",
+      "pass": true,
+      "hard": true,
+      "detail": "5 项强制披露 + 4 条禁用表述"
+    },
+    {
+      "id": "R11",
+      "name": "影子运行框架可验收",
+      "pass": true,
+      "hard": true,
+      "detail": "台账 0/6 月已填，模板态 PENDING/NO-GO（待 3~6 个月实盘观察）"
+    },
+    {
+      "id": "R12",
+      "name": "原回归验收 GO 不回退",
+      "pass": true,
+      "hard": true,
+      "detail": "regression 10/10 PASS，逐项与整改前一致=True"
+    },
+    {
+      "id": "R13",
+      "name": "上线口径仍优于单因子基准",
+      "pass": true,
+      "hard": true,
+      "detail": "S3 12.02%/0.867 vs 双均线(live) 10.66%/0.678"
+    }
+  ],
+  "verdict": "GO",
+  "checks_pass": 13,
+  "checks_total": 13,
+  "regression": {
+    "returncode": 0,
+    "verdict": "GO",
+    "passed": 10,
+    "total": 10,
+    "identical_to_before": true
+  }
+}
