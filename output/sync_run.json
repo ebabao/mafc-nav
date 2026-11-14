@@ -1,7 +1,7 @@
 {
-  "run_id": "SYNC-20261114-125802",
+  "run_id": "SYNC-20261114-131904",
   "as_of": "2026-11-14",
-  "generated_at": "2026-11-14T12:58:04",
+  "generated_at": "2026-11-14T13:19:10",
   "scraped": 4,
   "new": 0,
   "md": 4,
@@ -67,19 +67,19 @@
       "stage": "Stage1 真实行情探针",
       "status": "PASS",
       "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
-      "elapsed_sec": 0.91
+      "elapsed_sec": 3.42
     },
     {
       "stage": "Stage2 模型状态",
       "status": "PASS",
       "detail": "上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点",
-      "elapsed_sec": 0.04
+      "elapsed_sec": 0.03
     },
     {
       "stage": "Stage3 影子进化学习",
       "status": "PASS",
       "detail": "EVOLVED 版本 s001 降级=True 有效=fixed",
-      "elapsed_sec": 0.0
+      "elapsed_sec": 0.01
     },
     {
       "stage": "Stage4 日台账",
@@ -90,8 +90,8 @@
     {
       "stage": "Stage5 看板重生成",
       "status": "PASS",
-      "detail": "dashboard/index.html 211.7KB / 3 图",
-      "elapsed_sec": 0.63
+      "detail": "dashboard/index.html 242.7KB / 3 图",
+      "elapsed_sec": 2.52
     },
     {
       "stage": "Stage6 健康检查",
@@ -160,10 +160,10 @@
   },
   "dashboard": {
     "file": "dashboard/index.html",
-    "size_kb": 211.7,
+    "size_kb": 242.7,
     "figures": 3,
     "tables": 8
   },
   "verdict": "OK",
-  "elapsed_sec": 1.6
+  "elapsed_sec": 6.0
 }
