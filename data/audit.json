@@ -1,8 +1,8 @@
 {
   "runs": [
     {
-      "run_id": "SYNC-20261114-154522",
-      "at": "2026-11-14T15:45:24",
+      "run_id": "SYNC-20261114-171429",
+      "at": "2026-11-14T17:14:33",
       "status": "OK",
       "source": "sina",
       "new": 0,
@@ -23,7 +23,7 @@
       "stage": "Stage1 真实行情探针",
       "status": "PASS",
       "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
-      "elapsed_sec": 2.46
+      "elapsed_sec": 3.33
     },
     {
       "stage": "Stage2 模型状态",
@@ -46,8 +46,8 @@
     {
       "stage": "Stage5 看板重生成",
       "status": "PASS",
-      "detail": "dashboard/index.html 50.3KB / 5 个同源接口 / 229 净值点",
-      "elapsed_sec": 0.05
+      "detail": "dashboard/index.html 40.3KB / 5 个同源接口 / 229 净值点",
+      "elapsed_sec": 0.09
     },
     {
       "stage": "Stage6 健康检查",
@@ -100,6 +100,22 @@
       "scraped": "4",
       "new_monthly_points": "0",
       "run_id": "SYNC-20261114-171429"
+    },
+    {
+      "date": "2026-11-15",
+      "nav_live": "8.643386",
+      "nav_research": "11.408713",
+      "nav_month": "2026-11",
+      "nav_source": "carry_forward_from_2026-11",
+      "live_cagr": "0.120209",
+      "live_sharpe": "0.867312",
+      "shadow_version": "s001",
+      "shadow_status": "NO_NEW_SAMPLE",
+      "shadow_degraded": "True",
+      "shadow_effective": "fixed",
+      "scraped": "4",
+      "new_monthly_points": "0",
+      "run_id": "SYNC-20261115-161526"
     }
   ],
   "deployment": {

@@ -1,7 +1,7 @@
 {
-  "as_of": "2026-11-14",
-  "status": "EVOLVED",
-  "reused": false,
+  "as_of": "2026-11-15",
+  "status": "NO_NEW_SAMPLE",
+  "reused": true,
   "version": "s001",
   "seed": 1006,
   "training_params_source": "mafc-nav/vendor/prod/output/param_registry.json",
@@ -185,7 +185,7 @@
   "live_observation_months": 0,
   "sample_type": "historical_dry_run",
   "boundary": "进化学习为旁路监控：上线版固定参数始终不变；候选参数不得直接用于实盘；解除降级需连续 2 折样本外同时跑赢 CAGR 与 Sharpe。严格 DSR 口径仍为 NO-GO，进化不提高统计证据强度。",
-  "note": "训练参数继承上线前研究；当前实盘观察月数=0，净值为历史回灌演练；候选本折跑赢，但需连续 2 折才解除降级，本次仍按固定参数记账",
+  "note": "影子账户无新增实盘观察样本，本日不产生新参数版本；沿用上一版本并复核，不编造进化结果",
   "equity": {
     "months": [
       "2025-10",
