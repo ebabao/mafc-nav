@@ -1,8 +1,8 @@
 {
   "runs": [
     {
-      "run_id": "SYNC-20261114-171429",
-      "at": "2026-11-14T17:14:33",
+      "run_id": "SYNC-20261115-161526",
+      "at": "2026-11-15T16:15:28",
       "status": "OK",
       "source": "sina",
       "new": 0,
@@ -23,31 +23,31 @@
       "stage": "Stage1 真实行情探针",
       "status": "PASS",
       "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
-      "elapsed_sec": 3.33
+      "elapsed_sec": 2.12
     },
     {
       "stage": "Stage2 模型状态",
       "status": "PASS",
       "detail": "上线口径 CAGR 12.02% / Sharpe 0.867，净值 229 点",
-      "elapsed_sec": 0.05
+      "elapsed_sec": 0.03
     },
     {
       "stage": "Stage3 影子进化学习",
       "status": "PASS",
-      "detail": "EVOLVED 版本 s001 降级=True 有效=fixed",
-      "elapsed_sec": 0.01
+      "detail": "NO_NEW_SAMPLE 版本 s001 降级=True 有效=fixed",
+      "elapsed_sec": 0.0
     },
     {
       "stage": "Stage4 日台账",
       "status": "PASS",
-      "detail": "nav_daily.csv 1 行，同日覆盖幂等，净值 carry_forward",
-      "elapsed_sec": 0.01
+      "detail": "nav_daily.csv 2 行，同日覆盖幂等，净值 carry_forward",
+      "elapsed_sec": 0.0
     },
     {
       "stage": "Stage5 看板重生成",
       "status": "PASS",
       "detail": "dashboard/index.html 40.3KB / 5 个同源接口 / 229 净值点",
-      "elapsed_sec": 0.09
+      "elapsed_sec": 0.02
     },
     {
       "stage": "Stage6 健康检查",
@@ -116,6 +116,22 @@
       "scraped": "4",
       "new_monthly_points": "0",
       "run_id": "SYNC-20261115-161526"
+    },
+    {
+      "date": "2026-11-16",
+      "nav_live": "8.643386",
+      "nav_research": "11.408713",
+      "nav_month": "2026-11",
+      "nav_source": "carry_forward_from_2026-11",
+      "live_cagr": "0.120209",
+      "live_sharpe": "0.867312",
+      "shadow_version": "s001",
+      "shadow_status": "NO_NEW_SAMPLE",
+      "shadow_degraded": "True",
+      "shadow_effective": "fixed",
+      "scraped": "4",
+      "new_monthly_points": "0",
+      "run_id": "SYNC-20261116-162316"
     }
   ],
   "deployment": {
