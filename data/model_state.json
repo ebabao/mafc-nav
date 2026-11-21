@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-20T16:57:02",
-  "as_of_date": "2026-11-20",
+  "generated_at": "2026-11-21T16:38:48",
+  "as_of_date": "2026-11-21",
   "model": "MAFC 固定规则组合（RS轮动+MA5/12+黄金+中国利率债）",
   "source_prod": "mafc-nav/vendor/prod",
   "engine_cost_restored": true,
