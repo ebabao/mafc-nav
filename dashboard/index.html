@@ -175,7 +175,7 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="navlinks" id="navlinks">
     <a href="#overview">绩效概览</a><a href="#equity">净值对比</a><a href="#pit">爬坑体验</a>
     <a href="#monthly">月度收益</a><a href="#weights">仓位容量</a><a href="#signal">调仓信号</a>
-    <a href="#shadow">影子进化</a>
+    <a href="#shadow">影子进化</a><a href="#rules">策略说明</a>
   </div>
   <div class="live" id="live"><i></i><span>接口加载中</span></div>
 </div></nav>
@@ -263,6 +263,13 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
       <tbody id="probeBody"></tbody></table></div>
       <div class="body"><div class="note" id="probeNote"></div></div></div>
   </div>
+  <div class="card" style="margin-top:14px"><h3>最近调仓记录（近半年 · 决策月 t → 次月生效）</h3>
+    <div class="tw"><table>
+      <thead><tr><th>决策月</th><th>生效月</th><th>股票择时</th><th>RS 选中</th><th>目标仓位</th>
+        <th>敞口</th><th>熔断系数</th><th>QDII 溢价</th><th>变动</th></tr></thead>
+      <tbody id="rebBody"></tbody></table></div>
+    <div class="body"><div class="note" id="rebNote" style="margin:0"></div></div>
+  </div>
   <div class="card" style="margin-top:14px"><div class="body"><div class="note" id="sigNote" style="margin:0"></div></div></div>
 </section>
 
@@ -282,6 +289,18 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
     <div class="card"><h3>训练参数与降级规则</h3><div class="body"><div class="kv" id="shKV"></div></div></div>
   </div>
   <div class="card" style="margin-top:14px"><div class="body"><div class="note" id="shNote" style="margin:0"></div></div></div>
+</section>
+
+<section class="sec" id="rules">
+  <h2>策略运行说明</h2>
+  <div class="card"><div class="body" id="runNotes"></div></div>
+
+  <h2 style="margin-top:26px">因子规则</h2>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>因子</th><th>作用</th><th>触发 / 规则</th><th>当前参数</th></tr></thead>
+    <tbody id="factorBody"></tbody></table></div>
+    <div class="body"><div class="note" id="factorNote" style="margin:0"></div></div>
+  </div>
 </section>
 
 <footer id="footer">数据来源：本仓库同源策略数据接口（data/meta.json、nav.json、signal.json、shadow.json、audit.json）。<br>
@@ -509,6 +528,19 @@ function renderSignal(){
   <td>${p.available?badge("OK","ok"):badge("UNAVAILABLE","on")}</td><td>${esc(p.source||"—")}</td></tr>`).join("")
   ||'<tr><td colspan="4">—</td></tr>';
  $("#probeNote").innerHTML=esc(s.probe_note||"");
+ // 最近调仓记录（近半年）
+ const rb=s.rebalances||[], rc=s.rebalances_coverage||{};
+ $("#rebBody").innerHTML=rb.map(x=>{
+  const chg=x.changed?badge("调仓","on"):badge("维持","");
+  const blocked=x.premium_blocked?`<span class="up">${nf(x.premium_pct,2,"%")} 拦截</span>`:nf(x.premium_pct,2,"%");
+  return `<tr><td>${esc(x.decision_month)}</td><td>${esc(x.effective_month)}</td>
+   <td>${esc(x.regime_text)}</td><td>${esc(x.rs_pick_cn)}</td><td>${esc(x.weights_text)}</td>
+   <td>${nf(x.exposure,2,"x")}</td><td>${nf(x.scale,2)}</td><td>${blocked}</td><td>${chg}</td></tr>`;
+ }).join("")||'<tr><td colspan="9">—</td></tr>';
+ $("#rebNote").innerHTML=`展示最近 ${rc.recent_n||0} 个决策月；决策月 t 的仓位在 t+1 月生效，`
+  +`"变动=调仓"表示该月目标权重相对上月发生变化。完整逐月记录（${rc.total_decisions||0} 条，`
+  +`${esc(rc.first_decision||"")} ~ ${esc(rc.last_decision||"")}）见 `
+  +`<a href="./data/rebalances.csv" download>rebalances.csv</a>（同源接口，可下载）。`;
  $("#sigNote").innerHTML=`<strong>滞后口径：</strong>${esc(s.lag_note)} 完整目标仓位见 <code>data/signal.json</code>（同源接口）。`;
 }
 function renderShadow(){
@@ -551,7 +583,19 @@ function renderShadow(){
   Sharpe ${nf(cand.sharpe,3)} vs ${nf(fix.sharpe,3)}），但<strong>单折跑赢不足以解除降级</strong>，
   因此影子账户仍按<strong>固定参数</strong>记账，与上线版净值一致。${esc(s.note||"")}`;
 }
-function renderAll(){renderHeader();renderKPI();renderEquity();renderMonthly();renderWeights();renderSignal();renderShadow();}
+function renderRules(){
+ const s=S.sig, rn=s.run_notes||{}, fr=s.factor_rules||[];
+ const noteTitles={decision_lag:"决策与生效",data_refresh:"数据更新",cost_basis:"成本与口径",
+   capital_safety:"资金安全",shadow_boundary:"影子账户边界"};
+ $("#runNotes").innerHTML=Object.keys(noteTitles).map(k=>rn[k]
+   ?`<div class="note" style="margin:0 0 10px"><strong>${noteTitles[k]}：</strong>${esc(rn[k])}</div>`:"").join("");
+ $("#factorBody").innerHTML=fr.map(f=>`<tr><td><strong>${esc(f.factor)}</strong></td>
+   <td>${esc(f.role)}</td><td>${esc(f.rule)}</td><td><code>${esc(f.param)}</code></td></tr>`).join("")
+   ||'<tr><td colspan="4">—</td></tr>';
+ $("#factorNote").innerHTML=`以上因子与参数来自本工程 <code>vendor/prod/output/param_registry.json</code> 与上线策略配置，`
+  +`当前参数指纹 <code>${esc(S.meta&&S.meta.params_fp||"")}</code>；规则写死、逐月留痕，不因日波动换仓。`;
+}
+function renderAll(){renderHeader();renderKPI();renderEquity();renderMonthly();renderWeights();renderSignal();renderShadow();renderRules();}
 function setSeg(sel,key,val){$$(sel+" button").forEach(b=>b.classList.toggle("on",b.dataset[key]===val));}
 $$("#gran button").forEach(b=>b.addEventListener("click",()=>{S.gran=b.dataset.g;setSeg("#gran","g",S.gran);renderEquity();}));
 $$("#range button").forEach(b=>b.addEventListener("click",()=>{S.range=b.dataset.r;setSeg("#range","r",S.range);renderEquity();}));

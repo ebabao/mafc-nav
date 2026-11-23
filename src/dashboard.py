@@ -24,6 +24,7 @@ import json
 import math
 import os
 import statistics
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -37,6 +38,9 @@ VCONF = os.path.join(VENDOR, "prod", "config")
 
 PAGE = os.path.join(DASH, "index.html")
 INTERFACES = ("meta.json", "nav.json", "signal.json", "shadow.json", "audit.json")
+REBAL_CSV = os.path.join(DATA, "rebalances.csv")     # 完整调仓记录（供下载）
+
+ASSET_CN2 = {"spx": "标普500", "ixic": "纳指", "gold": "黄金", "cnbond": "中国利率债"}
 
 ASSETS = (
     ("spx", "标普500ETF(513500)", "海外股票 / QDII"),
@@ -145,6 +149,108 @@ def derive_series(ns):
     return dates, live, research, dd, monthly, yearly
 
 
+def weights_text(w: str) -> str:
+    """把 'gold:0.343;ixic:0.857' 渲染成 '黄金34.3% + 纳指85.7%'。"""
+    parts = []
+    for seg in str(w).split(";"):
+        if ":" not in seg:
+            continue
+        k, v = seg.split(":", 1)
+        try:
+            parts.append(f"{ASSET_CN2.get(k.strip(), k.strip())}{float(v) * 100:.1f}%")
+        except ValueError:
+            parts.append(seg)
+    return " + ".join(parts) if parts else "现金"
+
+
+def build_rebalances():
+    """用与 model_api.state() 完全一致的上线口径重建逐月调仓快照。
+
+    决策月 t 的权重在 t+1 月生效；记录来源为 vendor/prod 引擎现场回测，
+    不引入外部数据、不编造。产出完整 CSV + 近半年接口子集。
+    返回 (all_rows, recent_rows, coverage)。
+    """
+    vproc = os.path.join(VENDOR, "prod")
+    for p in (vproc, os.path.join(vproc, "src")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import engine as E            # noqa: E402
+    import execution as X         # noqa: E402
+
+    s, e = E.month_index("2007-11"), E.month_index("2026-11")
+    pol = X.live_params(enable_brake=True)
+    prem, cov = X.premium_series()
+    sig, _ = X.guard_signals(pol, prem)
+    with X.cost_context(15):
+        res = E.run(s, e, pol, signals=sig, collect=True)
+    snap = res["snapshot"]
+
+    all_rows = []
+    prev_w = None
+    for _, z in snap.iterrows():
+        month = str(z["month"])
+        idx = E.month_index(month)
+        eff = str(E.DATES.iloc[min(idx + 1, len(E.DATES) - 1)].strftime("%Y-%m"))
+        regime = int(z["regime"]) if z["regime"] == z["regime"] else None
+        rs = str(z["rs_pick"])
+        w_raw = str(z["weights"])
+        changed = bool(prev_w is not None and w_raw != prev_w)
+        all_rows.append({
+            "decision_month": month,
+            "effective_month": eff,
+            "regime": regime,
+            "regime_text": "股票多头" if regime == 1 else ("空仓/债券承接" if regime == 0 else "—"),
+            "rs_pick": rs,
+            "rs_pick_cn": ASSET_CN2.get(rs, rs),
+            "weights": w_raw,
+            "weights_text": weights_text(w_raw),
+            "exposure": r(z["exposure"], 3),
+            "scale": r(z["scale"], 3),
+            "premium_pct": round(float(prem[idx]) * 100, 4),
+            "premium_blocked": bool(prem[idx] > X.PREMIUM_THRESHOLD),
+            "bear_bond_active": int(z["bear_bond_active"]),
+            "bond_cash": int(z["bond_cash"]),
+            "dd_pct": round(float(z["dd"]) * 100, 4),
+            "changed": changed,
+        })
+        prev_w = w_raw
+
+    # 完整记录写 CSV（utf-8-sig 便于 Excel 直接打开）
+    os.makedirs(DATA, exist_ok=True)
+    cols = ["decision_month", "effective_month", "regime_text", "rs_pick_cn",
+            "weights_text", "weights", "exposure", "scale", "premium_pct",
+            "premium_blocked", "bear_bond_active", "bond_cash", "dd_pct", "changed"]
+    cn = {"decision_month": "决策月", "effective_month": "生效月", "regime_text": "股票择时",
+          "rs_pick_cn": "RS选中", "weights_text": "目标仓位", "weights": "目标仓位(原始)",
+          "exposure": "总敞口(倍)", "scale": "熔断系数", "premium_pct": "QDII溢价(%)",
+          "premium_blocked": "溢价拦截", "bear_bond_active": "债券承接", "bond_cash": "现金增强",
+          "dd_pct": "当时回撤(%)", "changed": "是否调仓"}
+    headers = [cn[c] for c in cols]              # 中文表头
+    with open(REBAL_CSV, "w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=headers, extrasaction="ignore")
+        writer.writeheader()
+        for row in all_rows:
+            out = {}
+            for c in cols:
+                v = row[c]
+                if c in ("premium_blocked", "bear_bond_active", "bond_cash", "changed"):
+                    v = "是" if v else "否"
+                out[cn[c]] = v
+            writer.writerow(out)
+
+    # 近半年 = 最近 6 个决策月（含是否已调仓标记）
+    recent = all_rows[-6:]
+    coverage = {
+        "total_decisions": len(all_rows),
+        "first_decision": all_rows[0]["decision_month"],
+        "last_decision": all_rows[-1]["decision_month"],
+        "recent_n": len(recent),
+        "csv_file": "data/rebalances.csv",
+        "csv_note": "完整逐月调仓快照：决策月 t 的仓位在 t+1 月生效；原始权重与目标仓位(中文)双列；含溢价拦截/熔断/债券承接留痕。",
+    }
+    return all_rows, recent, coverage
+
+
 def build():
     M = jload(os.path.join(DATA, "model_state.json"))
     S = jload(os.path.join(DATA, "shadow_state.json"))
@@ -179,6 +285,15 @@ def build():
     fp = hashlib.sha1(
         json.dumps(fixed, sort_keys=True, ensure_ascii=False).encode("utf-8")
     ).hexdigest()[:10].upper()
+
+    # 逐月调仓记录（同源重建）；失败不阻断看板其余接口
+    try:
+        _, rebalances_recent, rebal_cov = build_rebalances()
+    except Exception as exc:  # pragma: no cover - 兜底：如实标注，不编造
+        rebalances_recent, rebal_cov = [], {
+            "csv_file": "data/rebalances.csv", "recent_n": 0,
+            "csv_note": f"调仓记录生成失败：{exc}", "error": str(exc),
+        }
 
     # ---------- 1. nav.json ----------
     scenarios = []
@@ -270,6 +385,41 @@ def build():
         "probe": probe,
         "probe_note": "探针仅用于判断数据新鲜度，不写入模型价格数据；补数最多尝试 2 次（新浪→东财），失败如实标 unavailable，不填假设值。",
         "premium_coverage": M.get("premium_coverage", {}),
+        "rebalances": rebalances_recent,
+        "rebalances_coverage": rebal_cov,
+        "run_notes": {
+            "decision_lag": "每月末用截至当月的行情计算信号，决策月 t 的目标仓位在 t+1 月生效；盘中不因日波动换仓。",
+            "data_refresh": "每日自动同步真实行情探针（新浪→东财，补数≤2 次，失败回退上一版快照并标注）；无新月度行情时净值沿用上月 carry_forward，不编造日波动。",
+            "cost_basis": "实盘统一 15bp 单边成本 + QDII 溢价>2% 不建仓 + 回撤熔断；研究口径 5bp 仅作对照，不用于对外业绩展示。",
+            "capital_safety": "无未来函数（信号只用 t 及之前数据）；月度资金守恒；换手含资产间切换成本；杠杆硬上限 1.2。",
+            "shadow_boundary": "影子账户为旁路监控，候选参数须连续 2 折样本外同时跑赢才解除降级，未达标前按固定参数记账。",
+        },
+        "factor_rules": [
+            {"factor": "双均线 MA5/12", "role": "股票总择时",
+             "rule": "风险组合净值 MA5>MA12 → 满仓股票腿；否则空仓，由利率债承接。",
+             "param": f"ma_fast={fixed.get('ma_fast')}, ma_slow={fixed.get('ma_slow')}"},
+            {"factor": "RS 相对动量 12M", "role": "股票内轮动",
+             "rule": "纳指 12M 动量 > 标普 → 持纳指，否则持标普；股票多头时生效。",
+             "param": f"rs_lb={fixed.get('rs_lb')}"},
+            {"factor": "TSMOM 12M", "role": "黄金/利率债趋势过滤",
+             "rule": "黄金 12M 动量>阈值且自身 MA5>MA12 才建黄金腿（且仅在股票多头时配置）。",
+             "param": f"mom_lb={fixed.get('mom_lb')}, g_thr={fixed.get('g_thr')}, use_g_ma={fixed.get('use_g_ma')}"},
+            {"factor": "黄金卫星腿", "role": "低相关第二收益流",
+             "rule": "股票多头时按固定权重配置黄金，空头时段不持黄金（诊断显示空头持金拖累）。",
+             "param": f"w_gold={fixed.get('w_gold')}, gold_only_in_bull={fixed.get('gold_only_in_bull')}"},
+            {"factor": "利率债空头承接", "role": "替代空仓现金",
+             "rule": "股票空头且利率债趋势健康时，用负相关利率债替代空仓；闲置现金也配利率债增强。",
+             "param": f"bear_bond={fixed.get('bear_bond')}, bond_as_cash={fixed.get('bond_as_cash')}, b_thr={fixed.get('b_thr')}"},
+            {"factor": "QDII 溢价过滤", "role": "建仓闸门",
+             "rule": "两只 QDII ETF 溢价较高者 > 2% 时，该月不建股票仓（激进追高保护）。",
+             "param": f"阈值={pct(pol.get('premium_threshold'), 2)}%"},
+            {"factor": "回撤熔断", "role": "组合层风控",
+             "rule": "组合回撤超过 15% 时，目标仓位整体乘 0.6；回撤修复后恢复。",
+             "param": f"dd_thr={pct(pol.get('dd_thr'), 2)}%, brake={pol.get('brake')}"},
+            {"factor": "杠杆上限", "role": "风控红线",
+             "rule": "总敞口硬上限 1.2 倍，超出按比例压缩；融资部分付 3.5% 年化息。",
+             "param": f"max_lev={pol.get('max_lev')}"},
+        ],
     }
     jdump("signal.json", signal_obj)
 
