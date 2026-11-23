@@ -1,7 +1,7 @@
 {
-  "run_id": "SYNC-20261123-132052",
+  "run_id": "SYNC-20261123-173408",
   "as_of": "2026-11-23",
-  "generated_at": "2026-11-23T13:20:55",
+  "generated_at": "2026-11-23T17:34:11",
   "scraped": 4,
   "new": 0,
   "md": 9,
@@ -67,7 +67,7 @@
       "stage": "Stage1 真实行情探针",
       "status": "PASS",
       "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
-      "elapsed_sec": 2.49
+      "elapsed_sec": 2.52
     },
     {
       "stage": "Stage2 模型状态",
@@ -85,13 +85,13 @@
       "stage": "Stage4 日台账",
       "status": "PASS",
       "detail": "nav_daily.csv 10 行，同日覆盖幂等，净值 carry_forward",
-      "elapsed_sec": 0.0
+      "elapsed_sec": 0.01
     },
     {
       "stage": "Stage5 看板重生成",
       "status": "PASS",
       "detail": "dashboard/index.html 43.3KB / 5 个同源接口 / 229 净值点",
-      "elapsed_sec": 0.28
+      "elapsed_sec": 0.15
     },
     {
       "stage": "Stage6 健康检查",
@@ -171,5 +171,5 @@
     "yearly_rows": 20
   },
   "verdict": "OK",
-  "elapsed_sec": 2.8
+  "elapsed_sec": 2.7
 }

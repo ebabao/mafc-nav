@@ -9,7 +9,7 @@
     "version": "上线口径 v1.0（S3）"
   },
   "as_of": "2026-11-23",
-  "generated_at": "2026-11-22T16:35:49",
+  "generated_at": "2026-11-23T13:20:55",
   "period": {
     "start": "2007-11",
     "end": "2026-11",
@@ -20,15 +20,15 @@
   "source_prod": "mafc-nav/vendor/prod",
   "basis": "上线口径 = 15bp 单边成本 + QDII 溢价>2% 不建仓 + 回撤熔断，是唯一实盘决策口径；研究口径 5bp 仅作对照，不得用于对外业绩展示。日间无新月度行情时净值沿用上月（carry_forward），不编造日波动；月度净值仅在月末数据确认后更新。",
   "sync": {
-    "last_sync": "2026-11-22T16:35:49",
-    "run_id": "SYNC-20261122-163546",
+    "last_sync": "2026-11-23T13:20:55",
+    "run_id": "SYNC-20261123-132052",
     "status": "OK",
     "source": "sina",
     "new": 0,
     "scraped": 4,
     "retry": 0,
     "fallback": false,
-    "elapsed_sec": 3.7
+    "elapsed_sec": 2.8
   },
   "live_policy": {
     "cost_bps_one_way": 15,
