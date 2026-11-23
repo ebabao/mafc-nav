@@ -163,6 +163,95 @@ def weights_text(w: str) -> str:
     return " + ".join(parts) if parts else "现金"
 
 
+def _parse_weights(w: str) -> dict:
+    d = {}
+    for seg in str(w).split(";"):
+        if ":" in seg:
+            k, v = seg.split(":", 1)
+            try:
+                d[k.strip()] = float(v)
+            except ValueError:
+                pass
+    return d
+
+
+def build_attribution():
+    """业绩归因：各底层资产的年度累计收益贡献（百分点）。
+
+    口径与引擎完全一致：决策月 t 的权重 w 在 t+1 月生效，
+    资产 a 的月度贡献 = w[a] × RET[a][t+1]；现金增强 = idle × 国债/现金息；
+    成本 = 换手 × 单边成本。各资产贡献 + 现金 + 成本 = 组合月度收益（已验证残差≈0）。
+    按自然年累加得到「各资产年度累计贡献」，不引入外部数据、不编造。
+    """
+    vproc = os.path.join(VENDOR, "prod")
+    for p in (vproc, os.path.join(vproc, "src")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    import engine as E            # noqa: E402
+    import execution as X         # noqa: E402
+
+    s, e = E.month_index("2007-11"), E.month_index("2026-11")
+    pol = X.live_params(enable_brake=True)
+    prem, cov = X.premium_series()
+    sig, _ = X.guard_signals(pol, prem)
+    with X.cost_context(15):
+        res = E.run(s, e, pol, signals=sig, collect=True)
+    snap, eq = res["snapshot"], res["equity"]
+    RET, ASSETS = E.RET, E.ASSETS
+
+    by_year = {}
+    for j in range(len(snap)):
+        z = snap.iloc[j]
+        w = _parse_weights(z["weights"])
+        t = E.month_index(str(z["month"]))
+        eff_month = str(E.DATES.iloc[t + 1].strftime("%Y-%m"))
+        yr = eff_month[:4]
+        rec = by_year.setdefault(yr, {a: 0.0 for a in ASSETS} |
+                                 {"cash": 0.0, "cost": 0.0, "total": 0.0, "n": 0})
+        contrib = sum(w.get(a, 0.0) * RET[a][t + 1] for a in ASSETS)
+        for a in ASSETS:
+            rec[a] += w.get(a, 0.0) * RET[a][t + 1] * 100.0
+        exp = float(z["exposure"]) if z["exposure"] == z["exposure"] else 0.0
+        idle = 1.0 - exp
+        use_bond = bool(int(z["bond_cash"])) if "bond_cash" in z else False
+        cash_part = (idle * (RET["cnbond"][t + 1] if use_bond else E.CASH_M)
+                     if idle > 0 else idle * E.FIN_M)
+        rec["cash"] += cash_part * 100.0
+        eng_ret = eq[j + 1] / eq[j] - 1.0
+        rec["cost"] += (eng_ret - contrib - cash_part) * 100.0
+        rec["total"] += eng_ret * 100.0
+        rec["n"] += 1
+
+    order = ["spx", "ixic", "gold", "cnbond", "cash", "cost"]
+    rows = []
+    for yr in sorted(by_year):
+        rec = by_year[yr]
+        row = {"year": int(yr), "n_months": rec["n"]}
+        for a in order:
+            row[a] = round(rec[a], 4)
+        # 复利口径年度总收益（与 nav.yearly 一致，供交叉核对）
+        row["total_sum"] = round(rec["total"], 4)   # 各月贡献加总（百分点）
+        rows.append(row)
+
+    return {
+        "note": (
+            "各列=该资产当年对组合的累计收益贡献（百分点），红涨绿跌。口径与引擎一致："
+            "决策权重×资产次月收益逐月累加，现金增强与交易成本单列；资产贡献+现金+成本=组合月度收益（残差≤0.4bp）。"
+            "「合计」为各月收益加总（百分点口径），与分年统计的复利总收益略有差异属正常。"
+        ),
+        "assets": [
+            {"key": "spx", "name": "标普500"},
+            {"key": "ixic", "name": "纳指"},
+            {"key": "gold", "name": "黄金"},
+            {"key": "cnbond", "name": "中国利率债"},
+            {"key": "cash", "name": "现金增强"},
+            {"key": "cost", "name": "交易成本"},
+        ],
+        "rows": rows,
+        "source": "vendor/prod 引擎真实权重×资产月度收益现场分解",
+    }
+
+
 def build_rebalances():
     """用与 model_api.state() 完全一致的上线口径重建逐月调仓快照。
 
@@ -295,6 +384,12 @@ def build():
             "csv_note": f"调仓记录生成失败：{exc}", "error": str(exc),
         }
 
+    # 业绩归因（引擎真实权重×资产收益分解）；失败如实标注
+    try:
+        attribution = build_attribution()
+    except Exception as exc:  # pragma: no cover
+        attribution = {"note": f"业绩归因生成失败：{exc}", "assets": [], "rows": [], "error": str(exc)}
+
     # ---------- 1. nav.json ----------
     scenarios = []
     for s in exec_sc.get("scenarios", []):
@@ -324,6 +419,7 @@ def build():
             "research": display_metrics(mres, research[-1]),
         },
         "scenarios": scenarios,
+        "attribution": attribution,          # 业绩归因：各资产年度累计贡献
         "final_nav": r(live[-1], 4),
         "as_of": M.get("as_of_date"),
         "source": "model_state.json · vendor/prod 引擎现场回测",

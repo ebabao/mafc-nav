@@ -95,6 +95,10 @@ a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
 .tip{position:absolute;pointer-events:none;background:rgba(19,42,74,.95);color:#fff;padding:7px 10px;
  border-radius:7px;font-size:12px;line-height:1.6;display:none;z-index:8;white-space:nowrap;
  box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.tip.pin{background:rgba(154,29,21,.96);box-shadow:0 8px 24px rgba(154,29,21,.35)}
+.tip .tv{color:#ffd7d3;font-weight:700}
+.tip .th{color:#9fc4ff;font-size:11px}
+.pin-hint{font-size:10.5px;color:var(--mut);padding:0 8px 8px}
 .stats{display:grid;grid-template-columns:repeat(6,1fr);border-top:1px solid var(--line);background:#fbfcff}
 .stats div{padding:11px 15px;border-right:1px solid var(--line)}
 .stats div:last-child{border-right:0}
@@ -203,10 +207,11 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="card">
     <div class="ctrl">
       <span class="lab">周期</span><div class="seg" id="gran">
-        <button data-g="month" class="on">月线</button><button data-g="quarter">季线</button><button data-g="year">年线</button></div>
+        <button data-g="month" class="on">月线</button><button data-g="year">年线</button></div>
       <span class="lab">区间</span><div class="seg" id="range">
-        <button data-r="all" class="on">全部</button><button data-r="10y">近 10 年</button>
-        <button data-r="5y">近 5 年</button><button data-r="3y">近 3 年</button><button data-r="1y">近 1 年</button></div>
+        <button data-r="1m">近1月</button><button data-r="3m">近3月</button>
+        <button data-r="1y">近1年</button><button data-r="3y">近3年</button><button data-r="5y">近5年</button>
+        <button data-r="all" class="on">全部</button></div>
       <span class="lab" id="chartMeta"></span>
     </div>
     <div class="chartbox" id="c_eq" style="position:relative"></div>
@@ -238,6 +243,10 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
     <tbody id="yearBody"></tbody></table></div>
     <div class="body"><div class="note">按自然年对月度收益复利统计，年化波动 = 月收益标准差 × √12，夏普按无风险利率 0 计。
       <strong>2007 / 2026 为不足整年区间</strong>，年化列不做跨年外推，如实显示「—」。</div></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>业绩归因 · 各资产年度累计贡献</h3>
+    <div class="tw"><table><thead><tr id="attrHead"></tr></thead><tbody id="attrBody"></tbody></table></div>
+    <div class="body"><div class="note" id="attrNote"></div></div>
   </div>
 </section>
 
@@ -309,7 +318,7 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
 
 <script>
 "use strict";
-const S={meta:null,nav:null,sig:null,sh:null,audit:null,gran:"month",range:"all"};
+const S={meta:null,nav:null,sig:null,sh:null,audit:null,gran:"month",range:"all",pin:null};
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const get=async p=>{const r=await fetch(p,{cache:"no-store"});if(!r.ok)throw new Error(p+" HTTP "+r.status);return r.json();};
 const nf=(v,d,unit,signed)=>{if(v==null||Number.isNaN(v))return "—";
@@ -362,34 +371,65 @@ function svgChart(box,dates,series,opt){
   for(let i=0;i<a.length;i++){const k=a[i]>=b[i]?"up":"dn";
    if(k!==cur){flush(Math.max(start,i-1));cur=k;start=Math.max(0,i-1);}}
   flush(a.length-1);paths=upEl.innerHTML+dnEl.innerHTML+paths;}
+ const hasPair=series.length>=2&&opt.fillExtra;
  const legend=`<div class="legend">${series.map(s=>`<span><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join("")}</div>`;
  box.innerHTML=`<div style="position:relative"><svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img">
   <defs>${defs}</defs>${grid}${paths}${ax}${xt}
   <line id="cross_${box.id}" y1="${PT}" y2="${PT+ph}" stroke="#94a3b8" stroke-dasharray="4 4" style="display:none"/>
   <rect id="hit_${box.id}" x="${PL}" y="${PT}" width="${pw}" height="${ph}" fill="transparent"/></svg>
-  <div class="tip" id="tip_${box.id}"></div></div>`+legend;
+  <div class="tip" id="tip_${box.id}"></div></div>`+legend
+  +(opt.tipHint?`<div class="pin-hint">${opt.tipHint}</div>`:"");
  const hit=$("#hit_"+box.id),tip=$("#tip_"+box.id),cross=$("#cross_"+box.id),svg=box.querySelector("svg");
- hit.addEventListener("pointermove",ev=>{
-  const r=hit.getBoundingClientRect(),vb=svg.getBoundingClientRect(),sc=W/vb.width;
+ const idxAt=ev=>{const r=hit.getBoundingClientRect(),vb=svg.getBoundingClientRect(),sc=W/vb.width;
   const vx=(ev.clientX-r.left)*sc;let i=Math.round((vx-PL)/pw*(dates.length-1));
-  i=Math.max(0,Math.min(dates.length-1,i));const x=X(i);
-  cross.setAttribute("x1",x);cross.setAttribute("x2",x);cross.style.display="block";
-  tip.innerHTML=`<b>${dates[i]}</b><br>`+series.map(s=>`${esc(s.name)} ${nf(s.values[i],2,opt.unit||"",false)}`).join("<br>");
-  tip.style.display="block";tip.style.left=Math.max(6,Math.min(ev.clientX-vb.left+12,vb.width-tip.offsetWidth-8))+"px";
-  tip.style.top=Math.max(6,ev.clientY-vb.top-58)+"px";});
- hit.addEventListener("pointerleave",()=>{tip.style.display="none";cross.style.display="none";});
+  return {i:Math.max(0,Math.min(dates.length-1,i)),vb};};
+ const tipHTML=(i)=>{
+  let h=`<b>${dates[i]}</b>`;
+  if(hasPair){const d=series[0].values[i]-series[1].values[i];
+   h+=`<br><span class="tv">上线 ${nf(series[0].values[i],2,"%",true)}</span>`;
+   h+=`<br>研究 ${nf(series[1].values[i],2,"%",true)}`;
+   h+=`<br><span class="th">超额 ${nf(d,2,"pp",true)} · 区间涨幅 ${nf(series[0].values[i],2,"%",true)}</span>`;}
+  else h+="<br>"+series.map(s=>`${esc(s.name)} ${nf(s.values[i],2,opt.unit||"",false)}`).join("<br>");
+  return h;};
+ const showAt=(i,ev,pinned)=>{
+  const x=X(i);cross.setAttribute("x1",x);cross.setAttribute("x2",x);
+  cross.setAttribute("stroke",pinned?"#9a1d15":"#94a3b8");cross.style.display="block";
+  tip.innerHTML=tipHTML(i);tip.classList.toggle("pin",!!pinned);tip.style.display="block";
+  const vb=svg.getBoundingClientRect();
+  const cx=ev?ev.clientX-vb.left:x/vb.width*vb.width;
+  tip.style.left=Math.max(6,Math.min(cx+12,vb.width-tip.offsetWidth-8))+"px";
+  tip.style.top=Math.max(6,(ev?ev.clientY-vb.top:PT/vb.width*vb.width)-58)+"px";};
+ hit.addEventListener("pointermove",ev=>{if(S.pin&&S.pin.box===box.id)return;
+  const {i}=idxAt(ev);showAt(i,ev,false);});
+ hit.addEventListener("pointerleave",()=>{if(S.pin&&S.pin.box===box.id)return;
+  tip.style.display="none";cross.style.display="none";});
+ hit.addEventListener("click",ev=>{
+  const {i}=idxAt(ev);
+  if(S.pin&&S.pin.box===box.id&&S.pin.i===i){S.pin=null;tip.classList.remove("pin");
+   cross.setAttribute("stroke","#94a3b8");tip.style.display="none";cross.style.display="none";return;}
+  S.pin={box:box.id,i};showAt(i,ev,true);});
 }
-function groupKey(d,g){if(g==="year")return d.slice(0,4);
- if(g==="quarter"){const m=+d.slice(5,7);return d.slice(0,4)+"-Q"+Math.ceil(m/3);}return d;}
-function monthMinus(ym,k){const[y,m]=ym.split("-").map(Number),idx=y*12+(m-1)-k;
- return Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0");}
-function viewIdx(){
- const n=S.nav,c=n.dates.length;let start=0;
- if(S.range!=="all"){const cut=monthMinus(n.dates[c-1],{"10y":120,"5y":60,"3y":36,"1y":12}[S.range]);
-  start=n.dates.findIndex(x=>x>=cut);if(start<0)start=0;}
- const out=[],seen={};for(let i=start;i<c;i++)seen[groupKey(n.dates[i],S.gran)]=i;
- for(let i=start;i<c;i++)if(seen[groupKey(n.dates[i],S.gran)]===i)out.push(i);
- return out.length?out:[c-1];}
+/* 周期聚合键：月线按 YYYY-MM、年线按 YYYY，均取该组最后一个真实月度点 */
+function groupKeyDay(d,g){return g==="year"?d.slice(0,4):d.slice(0,7);}
+/* 区间回溯：在月度日期序列上按回溯月数截取起点下标（近1月=回溯1个自然月，保留首点成线） */
+function rangeStartIdx(dates,range){
+ const n=dates.length;if(n<2)return 0;
+ const back={"1m":1,"3m":3,"1y":12,"3y":36,"5y":60}[range];
+ if(back==null)return 0;                       // all
+ const last=dates[n-1],y=+last.slice(0,4),m=+last.slice(5,7);
+ const idx=y*12+(m-1)-back;
+ const cut=Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0");
+ let i=dates.findIndex(x=>x>=cut);
+ i=i<0?0:Math.max(0,i-1);                      // 多留一个前点，保证区间首点可归一化成线
+ return i;}
+/* 根据当前 周期+区间 返回用于绘图的数据集（真实月度净值，下标一致） */
+function viewSet(){
+ const n=S.nav,dates=n.dates,nav=n.nav,res=n.research;
+ const start=rangeStartIdx(dates,S.range);
+ const seen={},out=[];
+ for(let i=start;i<dates.length;i++)seen[groupKeyDay(dates[i],S.gran)]=i;
+ for(let i=start;i<dates.length;i++)if(seen[groupKeyDay(dates[i],S.gran)]===i)out.push(i);
+ return {dates,nav,res,ix:out.length?out:[dates.length-1],interp:false};}
 const pick=(a,ix)=>ix.map(i=>a[i]);
 const ren=a=>a.map(v=>(v/a[0]-1)*100);
 
@@ -440,13 +480,17 @@ function renderKPI(){
   <b>${S.meta.reconcile.max_abs_diff_pp==null?"—":S.meta.reconcile.max_abs_diff_pp+"pp"}</b>（${S.meta.reconcile.ok?"通过":"如实披露"}）。`;
 }
 function renderEquity(){
- const n=S.nav,ix=viewIdx(),d=pick(n.dates,ix);
- const nav=pick(n.nav,ix),rs=pick(n.research,ix);
+ if(S.pin&&S.pin.box!=="c_eq")S.pin=null;   // 仅净值图锁定；切换后由交互重建
+ const n=S.nav,vs=viewSet(),d=pick(vs.dates,vs.ix);
+ const nav=pick(vs.nav,vs.ix),rs=pick(vs.res,vs.ix);
  const s1=ren(nav),s2=ren(rs);
  const series=[{name:"上线口径 S3",values:s1,color:"#d93025",area:true,width:2.2},
                {name:"研究口径 S0",values:s2,color:"#7c8db0",dash:true,width:1.7}];
- $("#chartMeta").textContent=`月线/季线/年线 · ${d.length} 点 · 截至 ${d[d.length-1]}`;
- svgChart($("#c_eq"),d,series,{unit:"%",digits:1,fillExtra:true,zeroBase:true});
+ const gLabel={month:"月线",year:"年线"}[S.gran];
+ const rLabel={all:"全部","5y":"近5年","3y":"近3年","1y":"近1年","3m":"近3月","1m":"近1月"}[S.range]||S.range;
+ $("#chartMeta").textContent=`${gLabel} · ${rLabel} · ${d.length} 点 · 截至 ${d[d.length-1]}`;
+ svgChart($("#c_eq"),d,series,{unit:"%",digits:1,fillExtra:true,zeroBase:true,
+   tipHint:"提示：移动鼠标定位曲线数值，单击可锁定该点、再次单击解除。"});
  const dd=nav.map((v,i)=>{let p=-Infinity;for(let j=0;j<=i;j++)p=Math.max(p,nav[j]);return (v/p-1)*100;});
  const last=s1[s1.length-1],mdd=Math.min.apply(null,dd);
  $("#eqStats").innerHTML=[
@@ -454,7 +498,7 @@ function renderEquity(){
   ["研究口径区间涨幅",`<span class="${cls(s2[s2.length-1])}">${nf(s2[s2.length-1],2,"%",true)}</span>`],
   ["区间最大回撤",`<span class="down">${nf(mdd,2,"%")}</span>`],
   ["执行口径折损",nf(n.metrics.live.cagr-n.metrics.research.cagr,2,"%",true)],
-  ["聚合数据点",String(d.length)],["数据截至",d[d.length-1]]]
+  ["聚合数据点",String(d.length)+" · "+gLabel],["数据截至",d[d.length-1]]]
   .map(([a,b])=>stat(a,b)).join("");
  const ddAll=n.dd;
  svgChart($("#c_dd"),n.dates,[{name:"净值回撤",values:ddAll,color:"#0f9d58",area:true}],
@@ -495,6 +539,24 @@ function renderMonthly(){
   <td class="${cls(y.annual_return_pct)}">${nf(y.annual_return_pct,2,"%",true)}</td>
   <td class="down">${nf(y.max_drawdown_pct,2,"%")}</td>
   <td>${nf(y.return_dd_ratio,2)}</td><td>${nf(y.std_pct,2,"%")}</td><td>${nf(y.sharpe,2)}</td></tr>`).join("");
+ renderAttribution();
+}
+function renderAttribution(){
+ const a=S.nav.attribution||{},assets=a.assets||[],rows=a.rows||[];
+ if(!assets.length||!rows.length){
+  $("#attrHead").innerHTML="<th>业绩归因</th>";
+  $("#attrBody").innerHTML=`<tr><td>${esc(a.note||"数据暂不可用")}</td></tr>`;
+  $("#attrNote").textContent="";return;}
+ let mx=0;rows.forEach(rw=>assets.forEach(as=>mx=Math.max(mx,Math.abs(rw[as.key]||0))));mx=Math.max(mx,1);
+ $("#attrHead").innerHTML=`<th>年份</th>${assets.map(as=>`<th>${esc(as.name)}</th>`).join("")}<th>组合合计</th><th>月数</th>`;
+ $("#attrBody").innerHTML=rows.map(rw=>{
+  const cells=assets.map(as=>{const v=rw[as.key]||0,al=Math.min(Math.abs(v)/mx,1);
+   const bg=v>=0?`rgba(217,48,37,${(.06+.5*al).toFixed(2)})`:`rgba(15,157,88,${(.06+.5*al).toFixed(2)})`;
+   return `<td class="${cls(v)}" style="background:${bg}" title="${esc(as.name)} ${rw.year}: ${nf(v,2,'pp',true)}">${nf(v,1)}</td>`;}).join("");
+  const tt=rw.total_sum||0;
+  return `<tr><td>${rw.year} 年</td>${cells}<td class="${cls(tt)}"><b>${nf(tt,1,"pp",true)}</b></td><td>${rw.n_months}</td></tr>`;
+ }).join("");
+ $("#attrNote").innerHTML=esc(a.note||"")+(a.source?` <span style="color:var(--mut)">数据源：${esc(a.source)}</span>`:"");
 }
 function renderWeights(){
  const s=S.sig,w=(S.sig.current||[]);
@@ -597,8 +659,8 @@ function renderRules(){
 }
 function renderAll(){renderHeader();renderKPI();renderEquity();renderMonthly();renderWeights();renderSignal();renderShadow();renderRules();}
 function setSeg(sel,key,val){$$(sel+" button").forEach(b=>b.classList.toggle("on",b.dataset[key]===val));}
-$$("#gran button").forEach(b=>b.addEventListener("click",()=>{S.gran=b.dataset.g;setSeg("#gran","g",S.gran);renderEquity();}));
-$$("#range button").forEach(b=>b.addEventListener("click",()=>{S.range=b.dataset.r;setSeg("#range","r",S.range);renderEquity();}));
+$$("#gran button").forEach(b=>b.addEventListener("click",()=>{S.gran=b.dataset.g;S.pin=null;setSeg("#gran","g",S.gran);renderEquity();}));
+$$("#range button").forEach(b=>b.addEventListener("click",()=>{S.range=b.dataset.r;S.pin=null;setSeg("#range","r",S.range);renderEquity();}));
 let rt=null;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderEquity();if(S.sh&&S.sh.equity&&S.sh.equity.months&&S.sh.equity.months.length){
  const eq=S.sh.equity;svgChart($("#c_sh"),eq.months,[
   {name:"有效净值（固定参数）",values:ren(eq.shadow||[]),color:"#d93025",width:2.2},
