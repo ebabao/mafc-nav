@@ -2155,6 +2155,258 @@
       "is_live": false
     }
   ],
+  "attribution": {
+    "note": "各列=该资产当年对组合的累计收益贡献（百分点），红涨绿跌。口径与引擎一致：决策权重×资产次月收益逐月累加，现金增强与交易成本单列；资产贡献+现金+成本=组合月度收益（残差≤0.4bp）。「合计」为各月收益加总（百分点口径），与分年统计的复利总收益略有差异属正常。",
+    "assets": [
+      {
+        "key": "spx",
+        "name": "标普500"
+      },
+      {
+        "key": "ixic",
+        "name": "纳指"
+      },
+      {
+        "key": "gold",
+        "name": "黄金"
+      },
+      {
+        "key": "cnbond",
+        "name": "中国利率债"
+      },
+      {
+        "key": "cash",
+        "name": "现金增强"
+      },
+      {
+        "key": "cost",
+        "name": "交易成本"
+      }
+    ],
+    "rows": [
+      {
+        "year": 2007,
+        "n_months": 1,
+        "spx": 0.0,
+        "ixic": -0.2796,
+        "gold": 2.1956,
+        "cnbond": 0.0,
+        "cash": -0.0574,
+        "cost": -0.181,
+        "total_sum": 1.6777
+      },
+      {
+        "year": 2008,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": -12.7244,
+        "gold": 5.5716,
+        "cnbond": 7.639,
+        "cash": -0.1148,
+        "cost": -0.3344,
+        "total_sum": 0.0369
+      },
+      {
+        "year": 2009,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 10.8601,
+        "gold": 5.3059,
+        "cnbond": -0.0103,
+        "cash": -0.2297,
+        "cost": -0.3304,
+        "total_sum": 15.5956
+      },
+      {
+        "year": 2010,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 10.8709,
+        "gold": 7.0657,
+        "cnbond": -0.4932,
+        "cash": -0.5742,
+        "cost": -0.6611,
+        "total_sum": 16.2081
+      },
+      {
+        "year": 2011,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": -7.5426,
+        "gold": 5.4847,
+        "cnbond": 1.2401,
+        "cash": -0.5168,
+        "cost": -0.3335,
+        "total_sum": -1.668
+      },
+      {
+        "year": 2012,
+        "n_months": 12,
+        "spx": 1.3566,
+        "ixic": -4.1054,
+        "gold": -2.3158,
+        "cnbond": 0.4888,
+        "cash": 0.2411,
+        "cost": -1.3315,
+        "total_sum": -5.6661
+      },
+      {
+        "year": 2013,
+        "n_months": 12,
+        "spx": 11.5935,
+        "ixic": 16.87,
+        "gold": 0.0136,
+        "cnbond": 0.0,
+        "cash": 0.1759,
+        "cost": -0.612,
+        "total_sum": 28.041
+      },
+      {
+        "year": 2014,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 8.3097,
+        "gold": 0.0,
+        "cnbond": 0.3134,
+        "cash": 0.0,
+        "cost": -0.6,
+        "total_sum": 8.0231
+      },
+      {
+        "year": 2015,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 1.4576,
+        "gold": 0.0,
+        "cnbond": 2.3876,
+        "cash": 0.0,
+        "cost": -0.3,
+        "total_sum": 3.5452
+      },
+      {
+        "year": 2016,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 0.0,
+        "gold": 0.0,
+        "cnbond": 3.3449,
+        "cash": 0.0,
+        "cost": 0.0,
+        "total_sum": 3.3449
+      },
+      {
+        "year": 2017,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 20.7463,
+        "gold": -0.2271,
+        "cnbond": -0.0494,
+        "cash": -0.1148,
+        "cost": -0.5183,
+        "total_sum": 19.8366
+      },
+      {
+        "year": 2018,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": -1.5254,
+        "gold": -1.2938,
+        "cnbond": 1.3203,
+        "cash": -0.3445,
+        "cost": -0.6282,
+        "total_sum": -2.4716
+      },
+      {
+        "year": 2019,
+        "n_months": 12,
+        "spx": 1.1251,
+        "ixic": 16.6363,
+        "gold": 0.5575,
+        "cnbond": 2.3652,
+        "cash": -0.1723,
+        "cost": -1.2889,
+        "total_sum": 19.2229
+      },
+      {
+        "year": 2020,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 35.86,
+        "gold": 6.7101,
+        "cnbond": 2.729,
+        "cash": -0.3445,
+        "cost": -1.3168,
+        "total_sum": 43.6379
+      },
+      {
+        "year": 2021,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 12.5215,
+        "gold": -3.5523,
+        "cnbond": 0.0933,
+        "cash": -0.1723,
+        "cost": -0.671,
+        "total_sum": 8.2194
+      },
+      {
+        "year": 2022,
+        "n_months": 12,
+        "spx": -12.8667,
+        "ixic": 0.0,
+        "gold": -0.2035,
+        "cnbond": 1.3164,
+        "cash": 0.7628,
+        "cost": -0.6435,
+        "total_sum": -11.6345
+      },
+      {
+        "year": 2023,
+        "n_months": 12,
+        "spx": 1.0913,
+        "ixic": 11.5127,
+        "gold": 3.6283,
+        "cnbond": 1.6879,
+        "cash": 0.1247,
+        "cost": -0.9295,
+        "total_sum": 17.1154
+      },
+      {
+        "year": 2024,
+        "n_months": 12,
+        "spx": 0.0,
+        "ixic": 20.4883,
+        "gold": 5.6836,
+        "cnbond": 3.336,
+        "cash": -0.4593,
+        "cost": -1.649,
+        "total_sum": 27.3996
+      },
+      {
+        "year": 2025,
+        "n_months": 12,
+        "spx": -0.6535,
+        "ixic": 20.1402,
+        "gold": 12.0157,
+        "cnbond": -0.0383,
+        "cash": -0.4593,
+        "cost": -1.176,
+        "total_sum": 29.8287
+      },
+      {
+        "year": 2026,
+        "n_months": 11,
+        "spx": 0.0,
+        "ixic": 10.549,
+        "gold": -1.627,
+        "cnbond": 1.7322,
+        "cash": -0.2871,
+        "cost": -1.3176,
+        "total_sum": 9.0496
+      }
+    ],
+    "source": "vendor/prod 引擎真实权重×资产月度收益现场分解"
+  },
   "final_nav": 8.6434,
   "as_of": "2026-11-23",
   "source": "model_state.json · vendor/prod 引擎现场回测"
