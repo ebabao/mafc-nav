@@ -1,13 +1,13 @@
 {
-  "run_id": "SYNC-20261126-175430",
-  "as_of": "2026-11-26",
-  "generated_at": "2026-11-26T17:54:33",
+  "run_id": "SYNC-20261127-175851",
+  "as_of": "2026-11-27",
+  "generated_at": "2026-11-27T17:58:54",
   "scraped": 4,
   "new": 0,
   "md": 9,
   "per_account": {
     "spx": {
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": [
@@ -19,7 +19,7 @@
       "note": "仅作数据新鲜度探针，不写入模型价格数据"
     },
     "ixic": {
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": [
@@ -31,7 +31,7 @@
       "note": "仅作数据新鲜度探针，不写入模型价格数据"
     },
     "gold": {
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": [
@@ -43,7 +43,7 @@
       "note": "仅作数据新鲜度探针，不写入模型价格数据"
     },
     "cnbond": {
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": [
@@ -67,7 +67,7 @@
       "stage": "Stage1 真实行情探针",
       "status": "PASS",
       "detail": "4/4 标的取到最新交易日；新增月度净值点 0（月末未确认，不编造）",
-      "elapsed_sec": 2.49
+      "elapsed_sec": 2.51
     },
     {
       "stage": "Stage2 模型状态",
@@ -84,14 +84,14 @@
     {
       "stage": "Stage4 日台账",
       "status": "PASS",
-      "detail": "nav_daily.csv 13 行，同日覆盖幂等，净值 carry_forward",
+      "detail": "nav_daily.csv 14 行，同日覆盖幂等，净值 carry_forward",
       "elapsed_sec": 0.0
     },
     {
       "stage": "Stage5 看板重生成",
       "status": "PASS",
       "detail": "dashboard/index.html 47.1KB / 5 个同源接口 / 229 净值点",
-      "elapsed_sec": 0.11
+      "elapsed_sec": 0.12
     },
     {
       "stage": "Stage6 健康检查",
@@ -171,5 +171,5 @@
     "yearly_rows": 20
   },
   "verdict": "OK",
-  "elapsed_sec": 2.6
+  "elapsed_sec": 2.7
 }
