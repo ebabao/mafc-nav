@@ -706,6 +706,16 @@ def build():
     }
     jdump("meta.json", meta_obj)
 
+    # ---------- 多尺度净值接口（日/周线 + 中证800基准）----------
+    # 由 multiscale_nav.py 生成（月频决策 + 真实日线逐日估值，月末锚定看板月线）。
+    # 发布到 data/nav_multiscale.json 供前端同源 fetch；缺失时不阻断主看板。
+    ms_src = os.path.join(VENDOR, "prod", "data", "clean", "nav_multiscale.json")
+    if os.path.exists(ms_src):
+        with open(ms_src, encoding="utf-8") as _f:
+            _ms = json.load(_f)
+        jdump("nav_multiscale.json", _ms)
+        print(f"[multiscale] 已发布日/周线：日{len(_ms['daily']['dates'])}点 周{len(_ms['weekly']['dates'])}点", file=sys.stderr)
+
     # ---------- 自检 ----------
     for name in INTERFACES:
         path = os.path.join(DATA, name)

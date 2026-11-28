@@ -207,7 +207,7 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   <div class="card">
     <div class="ctrl">
       <span class="lab">周期</span><div class="seg" id="gran">
-        <button data-g="month" class="on">月线</button><button data-g="year">年线</button></div>
+        <button data-g="day">日线</button><button data-g="week">周线</button><button data-g="month" class="on">月线</button><button data-g="year">年线</button></div>
       <span class="lab">区间</span><div class="seg" id="range">
         <button data-r="1m">近1月</button><button data-r="3m">近3月</button>
         <button data-r="1y">近1年</button><button data-r="3y">近3年</button><button data-r="5y">近5年</button>
@@ -217,8 +217,10 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
     <div class="chartbox" id="c_eq" style="position:relative"></div>
     <div class="stats" id="eqStats"></div>
     <div class="body"><div class="note">两条净值均按区间首点归一化；浅蓝填充为上线口径跑赢研究口径部分、浅红为跑输部分。
-      全部数据来自本页同源接口 <code>data/nav.json</code>（229 点月度净值，引擎现场回测），无外部数据引用。
-      研究口径 5bp <strong>仅作对照</strong>，不得用于对外业绩展示。</div></div>
+      月/年线来自同源接口 <code>data/nav.json</code>（229 点月度净值，引擎现场回测）。
+      <strong>日/周线</strong>来自 <code>data/nav_multiscale.json</code>：月频决策、月内持仓固定、真实日线逐日估值（非插值），
+      月末锚定到看板月线；受黄金真实日线约束，覆盖 <b>2017-12 至今</b>。中证800（sh000906）为叠加基准，同区间同起点归一化，
+      与美股+黄金+利率债组合口径不同，仅作相对参照。研究口径 5bp <strong>仅作对照</strong>，不得用于对外业绩展示。</div></div>
   </div>
 </section>
 
@@ -312,13 +314,13 @@ code{background:#eef2f5;padding:1px 6px;border-radius:4px;font-size:12px}
   </div>
 </section>
 
-<footer id="footer">数据来源：本仓库同源策略数据接口（data/meta.json、nav.json、signal.json、shadow.json、audit.json）。<br>
+<footer id="footer">数据来源：本仓库同源策略数据接口（data/meta.json、nav.json、nav_multiscale.json、signal.json、shadow.json、audit.json）。<br>
 策略净值 = vendor/prod 引擎对真实月度行情的现场回测；页面仅用于策略研究，不构成投资建议。市场有风险，投资需谨慎。</footer>
 </div>
 
 <script>
 "use strict";
-const S={meta:null,nav:null,sig:null,sh:null,audit:null,gran:"month",range:"all",pin:null};
+const S={meta:null,nav:null,sig:null,sh:null,audit:null,ms:null,gran:"month",range:"all",pin:null};
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const get=async p=>{const r=await fetch(p,{cache:"no-store"});if(!r.ok)throw new Error(p+" HTTP "+r.status);return r.json();};
 const nf=(v,d,unit,signed)=>{if(v==null||Number.isNaN(v))return "—";
@@ -385,10 +387,12 @@ function svgChart(box,dates,series,opt){
   return {i:Math.max(0,Math.min(dates.length-1,i)),vb};};
  const tipHTML=(i)=>{
   let h=`<b>${dates[i]}</b>`;
-  if(hasPair){const d=series[0].values[i]-series[1].values[i];
-   h+=`<br><span class="tv">上线 ${nf(series[0].values[i],2,"%",true)}</span>`;
-   h+=`<br>研究 ${nf(series[1].values[i],2,"%",true)}`;
-   h+=`<br><span class="th">超额 ${nf(d,2,"pp",true)} · 区间涨幅 ${nf(series[0].values[i],2,"%",true)}</span>`;}
+  if(hasPair){
+   const d=series[0].values[i]-series[1].values[i];
+   h+=`<br><span class="tv">${esc(series[0].name)} ${nf(series[0].values[i],2,"%",true)}</span>`;
+   h+=`<br>${esc(series[1].name)} ${nf(series[1].values[i],2,"%",true)}`;
+   if(series.length>2)h+=`<br>${esc(series[2].name)} ${nf(series[2].values[i],2,"%",true)}`;
+   h+=`<br><span class="th">超额 ${nf(d,2,"pp",true)}</span>`;}
   else h+="<br>"+series.map(s=>`${esc(s.name)} ${nf(s.values[i],2,opt.unit||"",false)}`).join("<br>");
   return h;};
  const showAt=(i,ev,pinned)=>{
@@ -409,27 +413,40 @@ function svgChart(box,dates,series,opt){
    cross.setAttribute("stroke","#94a3b8");tip.style.display="none";cross.style.display="none";return;}
   S.pin={box:box.id,i};showAt(i,ev,true);});
 }
-/* 周期聚合键：月线按 YYYY-MM、年线按 YYYY，均取该组最后一个真实月度点 */
-function groupKeyDay(d,g){return g==="year"?d.slice(0,4):d.slice(0,7);}
-/* 区间回溯：在月度日期序列上按回溯月数截取起点下标（近1月=回溯1个自然月，保留首点成线） */
+/* 数据是否有多尺度接口（日/周线） */
+const hasMS=()=>!!(S.ms&&S.ms.daily&&S.ms.daily.dates&&S.ms.daily.dates.length>10);
+/* 周期聚合键：月线按 YYYY-MM、年线按 YYYY，均取该组最后一个真实点 */
+function groupKeyDay(d,g){return g==="year"?d.slice(0,4):(g==="month"?d.slice(0,7):d.slice(0,10));}
+/* 区间回溯：按自然时间截取起点下标（近1月回溯1个自然月…），兼容 YYYY-MM 与 YYYY-MM-DD */
 function rangeStartIdx(dates,range){
  const n=dates.length;if(n<2)return 0;
  const back={"1m":1,"3m":3,"1y":12,"3y":36,"5y":60}[range];
  if(back==null)return 0;                       // all
  const last=dates[n-1],y=+last.slice(0,4),m=+last.slice(5,7);
  const idx=y*12+(m-1)-back;
- const cut=Math.floor(idx/12)+"-"+String(idx%12+1).padStart(2,"0");
- let i=dates.findIndex(x=>x>=cut);
+ const cut=Math.floor(idx/12)+"-"+String(((idx%12)+12)%12+1).padStart(2,"0");
+ let i=dates.findIndex(x=>x.slice(0,7)>=cut);
  i=i<0?0:Math.max(0,i-1);                      // 多留一个前点，保证区间首点可归一化成线
  return i;}
-/* 根据当前 周期+区间 返回用于绘图的数据集（真实月度净值，下标一致） */
+/* 根据当前 周期+区间 返回绘图数据集。
+   day/week：用真实日线接口(月频决策+逐日估值)，含中证800基准；
+   month/year：用看板月线权威接口。
+   返回 {dates,nav,res,ix,csi800?,interp:false} */
 function viewSet(){
+ const g=S.gran,useMS=(g==="day"||g==="week");
+ if(useMS&&hasMS()){
+  const src=g==="day"?S.ms.daily:S.ms.weekly;
+  const dates=src.dates,nav=src.nav,res=src.research,csi=src.csi800;
+  const start=rangeStartIdx(dates,S.range);
+  const ix=[];for(let i=start;i<dates.length;i++)ix.push(i);
+  return {dates,nav,res,ix,csi800:csi,interp:false,src:"ms"};
+ }
  const n=S.nav,dates=n.dates,nav=n.nav,res=n.research;
  const start=rangeStartIdx(dates,S.range);
  const seen={},out=[];
  for(let i=start;i<dates.length;i++)seen[groupKeyDay(dates[i],S.gran)]=i;
  for(let i=start;i<dates.length;i++)if(seen[groupKeyDay(dates[i],S.gran)]===i)out.push(i);
- return {dates,nav,res,ix:out.length?out:[dates.length-1],interp:false};}
+ return {dates,nav,res,ix:out.length?out:[dates.length-1],interp:false,src:"board"};}
 const pick=(a,ix)=>ix.map(i=>a[i]);
 const ren=a=>a.map(v=>(v/a[0]-1)*100);
 
@@ -486,16 +503,23 @@ function renderEquity(){
  const s1=ren(nav),s2=ren(rs);
  const series=[{name:"上线口径 S3",values:s1,color:"#d93025",area:true,width:2.2},
                {name:"研究口径 S0",values:s2,color:"#7c8db0",dash:true,width:1.7}];
- const gLabel={month:"月线",year:"年线"}[S.gran];
+ if(vs.csi800){const c=pick(vs.csi800,vs.ix);series.push({name:"中证800",values:ren(c),color:"#e8710a",dash:true,width:1.6});}
+ const gLabel={day:"日线",week:"周线",month:"月线",year:"年线"}[S.gran];
  const rLabel={all:"全部","5y":"近5年","3y":"近3年","1y":"近1年","3m":"近3月","1m":"近1月"}[S.range]||S.range;
- $("#chartMeta").textContent=`${gLabel} · ${rLabel} · ${d.length} 点 · 截至 ${d[d.length-1]}`;
+ const degraded=(S.gran==="day"||S.gran==="week")&&!hasMS();
+ $("#chartMeta").textContent=`${degraded?"月线(日/周数据未就绪)":gLabel} · ${rLabel} · ${d.length} 点 · 截至 ${d[d.length-1]}`;
  svgChart($("#c_eq"),d,series,{unit:"%",digits:1,fillExtra:true,zeroBase:true,
    tipHint:"提示：移动鼠标定位曲线数值，单击可锁定该点、再次单击解除。"});
  const dd=nav.map((v,i)=>{let p=-Infinity;for(let j=0;j<=i;j++)p=Math.max(p,nav[j]);return (v/p-1)*100;});
  const last=s1[s1.length-1],mdd=Math.min.apply(null,dd);
+ const extra=[];
+ if(vs.csi800){const sc=series[2].values,lastC=sc[sc.length-1];
+  extra.push(["中证800区间涨幅",`<span class="${cls(lastC)}">${nf(lastC,2,"%",true)}</span>`]);
+  extra.push(["超额 vs 中证800",`<span class="${cls(last-lastC)}">${nf(last-lastC,2,"pp",true)}</span>`]);}
  $("#eqStats").innerHTML=[
   ["区间涨幅（归一化）",`<span class="${cls(last)}">${nf(last,2,"%",true)}</span>`],
   ["研究口径区间涨幅",`<span class="${cls(s2[s2.length-1])}">${nf(s2[s2.length-1],2,"%",true)}</span>`],
+  ...extra,
   ["区间最大回撤",`<span class="down">${nf(mdd,2,"%")}</span>`],
   ["执行口径折损",nf(n.metrics.live.cagr-n.metrics.research.cagr,2,"%",true)],
   ["聚合数据点",String(d.length)+" · "+gLabel],["数据截至",d[d.length-1]]]
@@ -677,10 +701,11 @@ let rt=null;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout
 })();
 (async function boot(){
  try{
-  const [m,n,s,sh,a]=await Promise.all([
+  const [m,n,s,sh,a,ms]=await Promise.all([
    get("./data/meta.json"),get("./data/nav.json"),get("./data/signal.json"),
-   get("./data/shadow.json"),get("./data/audit.json")]);
-  S.meta=m;S.nav=n;S.sig=s;S.sh=sh;S.audit=a;
+   get("./data/shadow.json"),get("./data/audit.json"),
+   get("./data/nav_multiscale.json").catch(()=>null)]);  // 日/周线接口缺失时降级为仅月/年
+  S.meta=m;S.nav=n;S.sig=s;S.sh=sh;S.audit=a;S.ms=ms;
   renderAll();
  }catch(e){
   $("#live").innerHTML='<i></i><span>接口加载失败</span>';

@@ -1,0 +1,31 @@
+{
+  "source": "akshare index_us_stock_sina / futures_foreign_hist / stock_zh_index_daily",
+  "checks": {
+    "spx": {
+      "n": 241,
+      "corr": 0.99993,
+      "last_ratio": 0.9578,
+      "pass": true
+    },
+    "ixic": {
+      "n": 241,
+      "corr": 0.99992,
+      "last_ratio": 0.9475,
+      "pass": true
+    },
+    "gold": {
+      "n": 121,
+      "corr": 0.99971,
+      "last_ratio": 0.9458,
+      "pass": true
+    },
+    "cnbond": {
+      "n": 241,
+      "corr": 1.0,
+      "last_ratio": 0.9993,
+      "pass": true
+    }
+  },
+  "all_pass": true,
+  "note": "ratio为日线月末价/月度表月末价的比值；黄金期货代理现货存在小幅口径差，如实披露"
+}
