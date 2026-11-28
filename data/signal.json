@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-11-27",
+  "as_of": "2026-11-28",
   "decision_month": "2026-10",
   "nav_month": "2026-11",
   "lag_note": "决策月 t 的权重在 t+1 月生效，因此最新决策月比最新净值月早 1 个月；下表为为该净值月设定的目标仓位，不是当月收盘持仓。",
@@ -113,28 +113,28 @@
   "probe": [
     {
       "asset": "spx",
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "ixic",
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "gold",
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "cnbond",
-      "last_trade_date": "2026-11-25",
+      "last_trade_date": "2026-11-26",
       "available": true,
       "source": "sina",
       "attempts": 1
