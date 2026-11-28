@@ -113,28 +113,28 @@
   "probe": [
     {
       "asset": "spx",
-      "last_trade_date": "2026-11-26",
+      "last_trade_date": "2026-11-27",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "ixic",
-      "last_trade_date": "2026-11-26",
+      "last_trade_date": "2026-11-27",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "gold",
-      "last_trade_date": "2026-11-26",
+      "last_trade_date": "2026-11-27",
       "available": true,
       "source": "sina",
       "attempts": 1
     },
     {
       "asset": "cnbond",
-      "last_trade_date": "2026-11-26",
+      "last_trade_date": "2026-11-27",
       "available": true,
       "source": "sina",
       "attempts": 1
